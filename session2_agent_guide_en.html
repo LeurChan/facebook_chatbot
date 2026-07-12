@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 2 · Agent Guide — LangChain, Gemini, Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F1EA;
+  --bg-grid: #E8E3D6;
+  --paper: #FFFEFC;
+  --paper-soft: #FBF9F4;
+  --ink: #161A23;
+  --ink-soft: #4A4F5C;
+  --ink-faint: #8B8E97;
+  --rule: #D9D2BF;
+  --rule-soft: #E8E1CC;
+  --navy: #1E3A5F;
+  --navy-soft: #2C5282;
+  --coral: #DD5A3B;
+  --coral-soft: #E87A5F;
+  --amber: #B8842C;
+  --moss: #4A7C59;
+  --plum: #6B2D5C;
+  --plum-soft: #8B4577;
+  --code-bg: #EFEADD;
+  --shadow: 0 1px 0 rgba(30,58,95,0.05), 0 4px 12px rgba(30,58,95,0.06);
+  --shadow-lift: 0 4px 0 rgba(30,58,95,0.06), 0 10px 28px rgba(30,58,95,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 56px 32px 100px;
+}
+
+/* ============ HEADER / BRIEF ============ */
+.brief {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 48px 52px 44px;
+  position: relative;
+  margin-bottom: 48px;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.brief::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--navy), var(--moss));
+}
+.brief::after {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(30,58,95,0.14), transparent 70%);
+  pointer-events: none;
+}
+
+.tag-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  position: relative;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.tag.course { background: var(--navy); color: var(--paper); }
+.tag.level  { background: var(--moss); color: var(--paper); }
+.tag.deadline { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); }
+
+h1.project-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 3rem;
+  line-height: 1.05;
+  letter-spacing: -0.028em;
+  color: var(--ink);
+  margin-bottom: 6px;
+  position: relative;
+}
+h1.project-title em {
+  font-style: italic;
+  color: var(--navy);
+  font-weight: 500;
+}
+.project-sub {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+  font-weight: 400;
+  margin-bottom: 28px;
+  position: relative;
+}
+
+.scenario {
+  background: var(--paper-soft);
+  border-left: 3px solid var(--navy);
+  padding: 20px 24px;
+  margin: 0 0 24px;
+  position: relative;
+  font-size: 0.98rem;
+}
+.scenario-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--navy);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.scenario p { margin-bottom: 10px; color: var(--ink-soft); }
+.scenario p:last-child { margin-bottom: 0; }
+.scenario strong { color: var(--ink); font-weight: 600; }
+
+/* ============ INFO STRIP ============ */
+.info-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+  margin-bottom: 48px;
+  overflow: hidden;
+}
+.info-cell {
+  padding: 18px 22px;
+  border-right: 1px solid var(--rule-soft);
+}
+.info-cell:last-child { border-right: none; }
+.info-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.info-value {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.info-value small {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ============ SECTION DIVIDER ============ */
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 48px 0 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--ink);
+}
+.section-heading h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.section-heading h2 em { font-style: italic; color: var(--navy); font-weight: 500; }
+.section-heading .section-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+  margin-left: auto;
+}
+
+/* ============ OBJECTIVES ============ */
+.objectives {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 24px 28px;
+  margin-bottom: 32px;
+}
+.objectives h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.objectives ul {
+  list-style: none;
+}
+.objectives ul li {
+  padding: 6px 0 6px 28px;
+  position: relative;
+  color: var(--ink-soft);
+}
+.objectives ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  color: var(--moss);
+  font-weight: 700;
+}
+
+/* ============ TABLE ============ */
+.dataset-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 16px 0 32px;
+}
+.dataset-table th {
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--ink);
+  padding: 12px 16px;
+  font-weight: 600;
+}
+.dataset-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+.dataset-table tr:last-child td { border-bottom: none; }
+.dataset-table td:first-child {
+  font-weight: 600;
+  color: var(--coral);
+  width: 32%;
+}
+.dataset-table td:nth-child(2) { width: 30%; color: var(--ink-soft); }
+
+/* ============ TASKS / STEPS ============ */
+.task {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  margin-bottom: 22px;
+  position: relative;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease;
+}
+.task:hover { box-shadow: var(--shadow-lift); }
+
+.task-header {
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--rule-soft);
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 18px;
+  align-items: center;
+}
+.task-num {
+  width: 48px;
+  height: 48px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  border-radius: 4px;
+  font-feature-settings: "tnum";
+}
+.task.done .task-num { background: var(--moss); }
+.task-title-block .task-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.task-title-block .task-title em { font-style: italic; color: var(--navy); font-weight: 500; }
+.task-goal {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+.task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+.task-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+}
+
+.task-body { padding: 22px 28px 26px; }
+
+.task-body h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 18px 0 10px;
+  font-weight: 600;
+}
+.task-body h4:first-child { margin-top: 0; }
+
+.task-body p {
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.task-body strong { color: var(--ink); font-weight: 600; }
+
+.task-body ul, .task-body ol {
+  padding-left: 24px;
+  margin: 8px 0 12px;
+}
+.task-body ul li, .task-body ol li {
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 14px 0;
+  padding: 14px 18px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-size: 0.93rem;
+}
+.callout-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.callout p { margin-bottom: 6px; color: var(--ink-soft); }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong { color: var(--ink); }
+.callout ul { padding-left: 22px; margin: 4px 0; }
+.callout ul li { color: var(--ink-soft); margin-bottom: 4px; }
+
+.callout.hint { background: #FFF7E8; border-color: #F0E0B0; }
+.callout.hint .callout-label { color: var(--amber); }
+.callout.hint .callout-label::before { content: '💡'; }
+
+.callout.expected { background: #ECF3EE; border-color: #C5D9CC; }
+.callout.expected .callout-label { color: var(--moss); }
+.callout.expected .callout-label::before { content: '✓'; }
+
+.callout.warning { background: #FAEEEA; border-color: #E8C5B5; }
+.callout.warning .callout-label { color: var(--coral); }
+.callout.warning .callout-label::before { content: '⚠'; }
+
+.callout.think { background: #EDF1F7; border-color: #C2CFE0; }
+.callout.think .callout-label { color: var(--navy); }
+.callout.think .callout-label::before { content: '?'; font-weight: 900; font-family: 'Fraunces', serif; }
+
+/* ============ FLOW GRID ============ */
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+.flow-step {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 14px 16px;
+  position: relative;
+}
+.flow-step .fs-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--navy);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.flow-step .fs-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--ink);
+  margin: 2px 0 4px;
+}
+.flow-step .fs-desc {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+/* ============ CODE ============ */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: var(--paper-soft);
+  padding: 2px 9px;
+  border-bottom-left-radius: 3px;
+  font-weight: 700;
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86em;
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--plum);
+  font-weight: 500;
+}
+pre code { background: transparent; padding: 0; color: var(--ink); font-size: inherit; font-weight: 400; }
+
+.tok-kw { color: var(--coral); font-weight: 600; }
+.tok-fn { color: var(--navy); }
+.tok-str { color: var(--moss); }
+.tok-num { color: var(--plum); }
+.tok-cmt { color: var(--ink-faint); font-style: italic; }
+.tok-var { color: var(--plum); font-weight: 600; }
+
+/* ============ SCREENSHOT / ILLUSTRATION FIGURES ============ */
+.shot {
+  margin: 16px 0 4px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.shot-chrome {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: #ECE7DA;
+  border-bottom: 1px solid var(--rule);
+}
+.shot-chrome .dot { width: 10px; height: 10px; border-radius: 50%; background: #CFC8B5; }
+.shot-chrome .dot.r { background: #E08A6F; }
+.shot-chrome .dot.y { background: #E0B86F; }
+.shot-chrome .dot.g { background: #8FB89A; }
+.shot-url {
+  margin-left: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  border-radius: 10px;
+  padding: 3px 12px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shot-body { padding: 20px; background: #FAF8F2; }
+.shot figcaption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  color: var(--ink-faint);
+  padding: 9px 14px;
+  letter-spacing: 0.04em;
+  border-top: 1px dashed var(--rule-soft);
+  background: var(--paper);
+}
+.shot figcaption b { color: var(--navy); font-weight: 700; }
+
+/* mockup UI primitives */
+.mk { display: flex; gap: 16px; align-items: stretch; }
+.mk-sidebar { width: 148px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); padding: 6px; flex-shrink: 0; }
+.mk-item { padding: 7px 10px; font-size: 0.78rem; color: var(--ink-soft); border-radius: 3px; margin-bottom: 2px; }
+.mk-item.active { background: var(--navy); color: var(--paper); font-weight: 600; }
+.mk-panel { flex: 1; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); padding: 16px; min-width: 0; }
+.mk-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1rem; color: var(--ink); margin-bottom: 12px; }
+.mk-field { margin-bottom: 12px; }
+.mk-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.mk-input {
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-soft);
+  padding: 8px 11px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+  color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mk-btn { display: inline-block; background: var(--navy); color: var(--paper); border-radius: 5px; padding: 8px 16px; font-size: 0.78rem; font-weight: 600; }
+.mk-btn.secondary { background: var(--paper); color: var(--navy); border: 1px solid var(--navy); }
+.mk-btn.success { background: var(--moss); }
+.mk-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.mk-divider { height: 1px; background: var(--rule-soft); margin: 12px 0; }
+.marker {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 21px; height: 21px; border-radius: 50%; background: var(--coral); color: #fff;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+}
+.mk-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--paper-soft); border: 1px solid var(--rule); border-radius: 14px; padding: 4px 12px; font-size: 0.76rem; color: var(--ink-soft); }
+.term { background: #1C2230; color: #D7DCE5; border-radius: 0; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; line-height: 1.75; overflow-x: auto; }
+.term .g { color: #8FCB9B; }
+.term .c { color: #7A8294; }
+.term .a { color: #E3C07A; }
+.term .u { color: #7FB0E0; }
+
+/* ============ CHAT BUBBLES ============ */
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 0.86rem; line-height: 1.5; }
+.bubble.user { align-self: flex-end; background: var(--navy); color: #fff; border-bottom-right-radius: 4px; }
+.bubble.bot { align-self: flex-start; background: var(--paper-soft); border: 1px solid var(--rule); color: var(--ink-soft); border-bottom-left-radius: 4px; }
+.bubble .who { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; display: block; margin-bottom: 3px; }
+
+/* ============ FINISH ============ */
+.submission {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  padding: 32px 36px;
+  margin-top: 48px;
+  position: relative;
+}
+.submission .corner {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  font-weight: 700;
+}
+.submission h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: -0.015em;
+}
+.submission h2 em { font-style: italic; color: var(--navy); }
+.checklist { list-style: none; margin: 16px 0; }
+.checklist li {
+  padding: 10px 0 10px 36px;
+  position: relative;
+  border-bottom: 1px dashed var(--rule-soft);
+  color: var(--ink-soft);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--paper);
+}
+.checklist li strong { color: var(--ink); }
+
+/* ============ FOOTER ============ */
+footer {
+  margin-top: 60px;
+  padding-top: 30px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+
+/* ============ ORNAMENT ============ */
+.ornament {
+  text-align: center;
+  margin: 36px 0;
+  color: var(--rule);
+  font-family: 'Fraunces', serif;
+  letter-spacing: 0.6em;
+  font-size: 0.9rem;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 720px) {
+  .container { padding: 32px 18px 60px; }
+  .brief { padding: 32px 24px; }
+  h1.project-title { font-size: 2rem; }
+  .info-strip { grid-template-columns: 1fr 1fr; }
+  .info-cell:nth-child(1), .info-cell:nth-child(2) { border-bottom: 1px solid var(--rule-soft); }
+  .info-cell:nth-child(2) { border-right: none; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  .mk { flex-direction: column; }
+  .mk-sidebar { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; }
+  .task-header { grid-template-columns: 44px 1fr; gap: 14px; }
+  .task-meta { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; margin-top: 8px; }
+  .task-num { width: 36px; height: 36px; font-size: 1.1rem; }
+  .task-body, .task-header { padding-left: 20px; padding-right: 20px; }
+  .submission { padding: 24px; }
+  .dataset-table td:first-child, .dataset-table td:nth-child(2) { width: auto; }
+}
+
+@media print {
+  body { background: white; }
+  .container { max-width: 100%; padding: 20px; }
+  .task { page-break-inside: avoid; box-shadow: none; }
+  .brief, .submission, .shot { box-shadow: none; }
+  .brief::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ============ BRIEF ============ -->
+<div class="brief">
+  <div class="tag-row">
+    <span class="tag course">Session 2 · AI Agent</span>
+    <span class="tag level">Step-by-Step Guide</span>
+    <span class="tag deadline">~ 45–60 min</span>
+  </div>
+
+  <h1 class="project-title">Give Your Bot<br>a <em>Brain</em></h1>
+  <p class="project-sub">From a parrot that echoes, to an assistant that thinks — wire up a LangChain agent on Gemini, give it conversation memory, and plug it into the webhook.</p>
+
+  <div class="scenario">
+    <div class="scenario-label">What you'll achieve</div>
+    <p>In Session 1 your bot just <strong>echoed</strong> the customer's text. By the end of this session it will <strong>understand and answer</strong> using a Large Language Model (Gemini), and <strong>remember the conversation</strong> per customer — so a follow-up like "what about cats?" makes sense in context.</p>
+    <p>This guide is <strong>code-focused</strong>. You'll create three new files (<code>prompts.py</code>, <code>memory.py</code>, <code>agent.py</code>), wire two existing ones (<code>main.py</code>, <code>webhook.py</code>), and test without Facebook using a small CLI script.</p>
+  </div>
+</div>
+
+<!-- ============ PREREQ NOTE ============ -->
+<div class="callout hint" style="margin-bottom: 32px;">
+  <div class="callout-label">Before you open this guide</div>
+  <p>You must have <strong>finished Session 1</strong>: the echo bot replies on Messenger, your <code>.venv</code> works, and your <code>.env</code> already holds the Facebook tokens. If "hello" doesn't echo back yet, go finish the Session 1 setup guide first.</p>
+</div>
+
+<!-- ============ INFO STRIP ============ -->
+<div class="info-strip">
+  <div class="info-cell">
+    <div class="info-label">Time</div>
+    <div class="info-value">45–60<small>minutes</small></div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Steps</div>
+    <div class="info-value">8<small>+ troubleshooting</small></div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">You need</div>
+    <div class="info-value">Google account<small>for the Gemini key</small></div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Result</div>
+    <div class="info-value">Smart bot ✓<small>LLM + memory</small></div>
+  </div>
+</div>
+
+<!-- ============ PREREQUISITES ============ -->
+<div class="objectives">
+  <h3>Before you start</h3>
+  <ul>
+    <li><strong>Session 1 complete</strong> — echo bot works, <code>.venv</code> active, Facebook tokens in <code>.env</code></li>
+    <li>A <strong>Google account</strong> to create a free Gemini API key at Google AI Studio</li>
+    <li>The Session 2 <strong>stub files</strong> (<code>app/agent.py</code> with <code>build_agent()</code> / <code>reply()</code> placeholders) — or you'll create the files yourself</li>
+    <li>Your editor pointed at the <strong>.venv interpreter</strong> (so imports resolve)</li>
+  </ul>
+</div>
+
+<!-- ============ BIG PICTURE ============ -->
+<div class="section-heading">
+  <h2>The four <em>stages</em></h2>
+  <span class="section-tag">big picture</span>
+</div>
+
+<p style="margin-bottom: 12px; color: var(--ink-soft);">The 8 steps below group into four stages. The data path at runtime is: <strong>customer → webhook → agent (LLM + memory) → reply → customer</strong>.</p>
+
+<div class="flow">
+  <div class="flow-step">
+    <div class="fs-num">STAGE A</div>
+    <div class="fs-name">Install + Key</div>
+    <div class="fs-desc">Add LangChain, get a Gemini API key, put it in .env.</div>
+  </div>
+  <div class="flow-step">
+    <div class="fs-num">STAGE B</div>
+    <div class="fs-name">The Brain</div>
+    <div class="fs-desc">prompts.py, memory.py, agent.py — the agent and its memory.</div>
+  </div>
+  <div class="flow-step">
+    <div class="fs-num">STAGE C</div>
+    <div class="fs-name">Wire up</div>
+    <div class="fs-desc">Build the agent at startup; call it from the webhook.</div>
+  </div>
+  <div class="flow-step">
+    <div class="fs-num">STAGE D</div>
+    <div class="fs-name">Test</div>
+    <div class="fs-desc">Test locally with a CLI, then live on Messenger.</div>
+  </div>
+</div>
+
+<!-- ============ STEPS HEADER ============ -->
+<div class="section-heading">
+  <h2>The steps — <em>do them in order</em></h2>
+  <span class="section-tag">8 steps</span>
+</div>
+
+<p style="margin-bottom: 24px; color: var(--ink-soft);">Each step has a <strong>What to do</strong> section, the <strong>code</strong> to write, optional <strong>Hint / Watch out</strong> boxes, and a <strong>Verify</strong> box so you can confirm before moving on.</p>
+
+<!-- ============ STEP 00 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">00</div>
+    <div class="task-title-block">
+      <div class="task-title">Install <em>LangChain</em></div>
+      <div class="task-goal">Add the Session 2 packages on top of Session 1</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 5 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>With your <code>.venv</code> <strong>active</strong>, install the two new packages. We keep a separate requirements file per session so each one is easy to track.</p>
+<pre data-lang=".env / requirements_session2.txt"><span class="tok-cmt"># Session 2 — agent + memory (adds on top of requirements.txt)</span>
+langchain
+langchain-google-genai
+<span class="tok-cmt"># langchain-openai   (only if you set LLM_PROVIDER=openai)</span></pre>
+<pre data-lang="powershell">pip install -r requirements_session2.txt</pre>
+    <p><code>langchain-core</code> comes in automatically as a dependency — <code>memory.py</code> uses its <code>InMemoryChatMessageHistory</code>.</p>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>This prints a version starting with <strong>1.</strong> (e.g. 1.3.x):</p>
+<pre data-lang="powershell">python -c "import langchain, langchain_google_genai; print('OK', langchain.__version__)"</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 01 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">01</div>
+    <div class="task-title-block">
+      <div class="task-title">Get a <em>Gemini API key</em></div>
+      <div class="task-goal">Free key from Google AI Studio — no credit card</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 4 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Sign in with your Google account and open <code>aistudio.google.com/apikey</code>.</li>
+      <li>Click <strong>Create API key</strong> → pick an existing project or <strong>Create API key in new project</strong>.</li>
+      <li>Copy the key — it starts with <code>AIza…</code>.</li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">aistudio.google.com/apikey</span></div>
+      <div class="shot-body">
+        <div class="mk-panel">
+          <div class="mk-title">API keys</div>
+          <div class="mk-field" style="margin-bottom:0;"><div class="mk-label">Your key</div><div class="mk-row" style="margin:0;flex-wrap:nowrap;"><span class="marker">1</span><div class="mk-input" style="flex:1;">AIzaSyC… (copy this)</div></div></div>
+          <div class="mk-row" style="justify-content:flex-end;"><span class="mk-btn">Create API key</span></div>
+        </div>
+      </div>
+      <figcaption><b>Figure 1</b> — Create the key and copy the <b>AIza…</b> string.</figcaption>
+    </figure>
+
+    <h4>Add it to .env</h4>
+    <p>Open the <code>.env</code> in your <strong>project root</strong> (the same file with the Facebook tokens) and add these two lines:</p>
+<pre data-lang=".env"><span class="tok-var">LLM_PROVIDER</span>=gemini
+<span class="tok-var">GOOGLE_API_KEY</span>=AIzaSy...your_key_here</pre>
+
+    <div class="callout warning">
+      <div class="callout-label">Watch out — keep the key secret &amp; restart</div>
+      <p>Never commit or share this key. After editing <code>.env</code>, <strong>restart</strong> any running server — the file is read once at startup. Also confirm <code>.env</code> sits in the <strong>project root</strong>, not inside <code>.venv\</code> (a misplaced <code>.env</code> means the key is silently empty).</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>This prints <code>True</code> and a length around 39:</p>
+<pre data-lang="powershell">python -c "from app.config import settings; print(bool(settings.google_api_key), len(settings.google_api_key))"</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 02 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">02</div>
+    <div class="task-title-block">
+      <div class="task-title">Write the <em>system prompt</em></div>
+      <div class="task-goal">app/prompts.py — the bot's personality &amp; rules</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 5 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>The system prompt is the most powerful knob you have. Put it in <code>app/prompts.py</code> as a plain string so you can iterate and re-test quickly.</p>
+<pre data-lang="app/prompts.py"><span class="tok-var">SYSTEM_PROMPT</span> = <span class="tok-str">"""You are a friendly customer service assistant for a small business
+on Facebook Messenger. Reply in the same language the customer writes in.
+
+Rules you must always follow:
+- NEVER invent specific facts. Do not make up prices, opening hours, phone
+  numbers, addresses, promotions, services, or policies. If unsure, do NOT guess.
+- When you don't have verified information, say honestly that you'll check with
+  the team, and offer to note the customer's question or contact for follow-up.
+- NEVER reveal internal logic. Do not mention tools, databases, IDs, spreadsheets,
+  or that you are "saving" anything. Just respond like a helpful staff member.
+- Keep replies short and easy to read on a phone screen, and stay polite."""</span></pre>
+
+    <div class="callout think">
+      <div class="callout-label">Why the "never invent" rule?</div>
+      <p>In Session 2 the agent has <strong>no data source yet</strong>, so if you ask "what are your prices?" it will happily make up a plausible answer (a hallucination). The rule tells it to defer instead of guessing. The real fix — answering from <em>your</em> data — arrives in Session 3 with the FAQ tool.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p><code>python -c "from app.prompts import SYSTEM_PROMPT; print(len(SYSTEM_PROMPT))"</code> prints a number &gt; 0 with no import error.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 03 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">03</div>
+    <div class="task-title-block">
+      <div class="task-title">Add <em>conversation memory</em></div>
+      <div class="task-goal">app/memory.py — remember each customer's chat</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 5 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>Memory is a plain dictionary in RAM, keyed by the customer's Facebook PSID. It's wiped on restart — that's intentional for this capstone (persistent storage is out of scope).</p>
+<pre data-lang="app/memory.py"><span class="tok-kw">from</span> langchain_core.chat_history <span class="tok-kw">import</span> InMemoryChatMessageHistory
+
+<span class="tok-cmt"># user_id (Facebook PSID) -> that one conversation's history.</span>
+_histories: <span class="tok-fn">dict</span>[<span class="tok-fn">str</span>, InMemoryChatMessageHistory] = {}
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">get_history</span>(user_id: <span class="tok-fn">str</span>) -> InMemoryChatMessageHistory:
+    <span class="tok-kw">if</span> user_id <span class="tok-kw">not in</span> _histories:
+        _histories[user_id] = <span class="tok-fn">InMemoryChatMessageHistory</span>()
+    <span class="tok-kw">return</span> _histories[user_id]
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">clear_history</span>(user_id: <span class="tok-fn">str</span>) -> <span class="tok-kw">None</span>:
+    _histories.<span class="tok-fn">pop</span>(user_id, <span class="tok-kw">None</span>)</pre>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>No import error: <code>python -c "from app.memory import get_history; print(get_history('u1'))"</code></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 04 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">04</div>
+    <div class="task-title-block">
+      <div class="task-title">Build the <em>agent</em></div>
+      <div class="task-goal">app/agent.py — create_agent + the reply() helper</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 12 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>This is the core file. <code>build_agent()</code> creates the agent <strong>once</strong> and caches it in a module-level singleton. <code>reply()</code> is the single function the webhook calls for every message.</p>
+<pre data-lang="app/agent.py"><span class="tok-kw">import</span> logging
+
+<span class="tok-kw">from</span> langchain.agents <span class="tok-kw">import</span> create_agent
+<span class="tok-kw">from</span> langchain_core.messages <span class="tok-kw">import</span> HumanMessage
+<span class="tok-kw">from</span> langchain_google_genai <span class="tok-kw">import</span> ChatGoogleGenerativeAI
+
+<span class="tok-kw">from</span> app.config <span class="tok-kw">import</span> settings
+<span class="tok-kw">from</span> app.memory <span class="tok-kw">import</span> get_history
+<span class="tok-kw">from</span> app.prompts <span class="tok-kw">import</span> SYSTEM_PROMPT
+
+logger = logging.<span class="tok-fn">getLogger</span>(__name__)
+_agent = <span class="tok-kw">None</span>  <span class="tok-cmt"># singleton, set once in build_agent()</span>
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">build_agent</span>():
+    <span class="tok-kw">global</span> _agent
+
+    <span class="tok-kw">if</span> settings.llm_provider == <span class="tok-str">"gemini"</span>:
+        llm = <span class="tok-fn">ChatGoogleGenerativeAI</span>(
+            model=<span class="tok-str">"gemini-2.5-flash"</span>,
+            google_api_key=settings.google_api_key,
+        )
+    <span class="tok-kw">elif</span> settings.llm_provider == <span class="tok-str">"openai"</span>:
+        <span class="tok-kw">from</span> langchain_openai <span class="tok-kw">import</span> ChatOpenAI
+        llm = <span class="tok-fn">ChatOpenAI</span>(model=<span class="tok-str">"gpt-4o-mini"</span>, api_key=settings.openai_api_key)
+    <span class="tok-kw">else</span>:
+        <span class="tok-kw">raise</span> <span class="tok-fn">ValueError</span>(<span class="tok-str">f"Unknown LLM_PROVIDER: {settings.llm_provider}"</span>)
+
+    <span class="tok-cmt"># Session 3-4: add tools=[search_faq, save_to_sheet] to the call below</span>
+    _agent = <span class="tok-fn">create_agent</span>(llm, tools=[], system_prompt=SYSTEM_PROMPT)
+    logger.<span class="tok-fn">info</span>(<span class="tok-str">"Agent built (provider=%s)."</span>, settings.llm_provider)
+    <span class="tok-kw">return</span> _agent
+
+
+<span class="tok-kw">async def</span> <span class="tok-fn">reply</span>(user_id: <span class="tok-fn">str</span>, message: <span class="tok-fn">str</span>) -> <span class="tok-fn">str</span>:
+    history = <span class="tok-fn">get_history</span>(user_id)
+    result = <span class="tok-kw">await</span> _agent.<span class="tok-fn">ainvoke</span>(
+        {<span class="tok-str">"messages"</span>: history.messages + [<span class="tok-fn">HumanMessage</span>(content=message)]}
+    )
+    reply_text = result[<span class="tok-str">"messages"</span>][-<span class="tok-num">1</span>].content
+
+    history.<span class="tok-fn">add_user_message</span>(message)
+    history.<span class="tok-fn">add_ai_message</span>(reply_text)
+    <span class="tok-kw">return</span> reply_text</pre>
+
+    <div class="callout warning">
+      <div class="callout-label">Watch out — LangChain 1.x API (not the old tutorials!)</div>
+      <p>Most tutorials (and older docs) import <code>AgentExecutor</code> and <code>create_tool_calling_agent</code>. Those were <strong>removed in LangChain 1.0</strong> — importing them throws <code>ImportError: cannot import name 'AgentExecutor'</code>. In 1.x there is one factory: <code>create_agent</code>. You pass the system prompt directly (no manual <code>ChatPromptTemplate</code>), invoke with <code>{"messages": [...]}</code>, and read <code>result["messages"][-1].content</code>.</p>
+    </div>
+
+    <div class="callout hint">
+      <div class="callout-label">Why model = gemini-2.5-flash?</div>
+      <p>On some new keys, <code>gemini-2.0-flash</code> has <strong>zero free-tier quota</strong> and returns <code>429 RESOURCE_EXHAUSTED</code>. <code>gemini-2.5-flash</code> works on the free tier — use it as the default.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>No syntax error: <code>python -c "import app.agent"</code> imports cleanly. (We run the real call in Step 07.)</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 05 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">05</div>
+    <div class="task-title-block">
+      <div class="task-title">Build the agent at <em>startup</em></div>
+      <div class="task-goal">app/main.py — one shared agent via lifespan</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 5 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>Building the agent creates an LLM client — slow to do per message. Build it <strong>once</strong> when the server starts, using FastAPI's <code>lifespan</code>.</p>
+<pre data-lang="app/main.py"><span class="tok-kw">from</span> contextlib <span class="tok-kw">import</span> asynccontextmanager
+
+<span class="tok-kw">from</span> fastapi <span class="tok-kw">import</span> FastAPI
+
+<span class="tok-kw">from</span> app.agent <span class="tok-kw">import</span> build_agent
+<span class="tok-cmt"># ... your existing imports (settings, webhook_router, logging) ...</span>
+
+
+<span class="tok-fn">@asynccontextmanager</span>
+<span class="tok-kw">async def</span> <span class="tok-fn">lifespan</span>(app: FastAPI):
+    <span class="tok-fn">build_agent</span>()      <span class="tok-cmt"># build the agent ONCE when the server starts</span>
+    <span class="tok-kw">yield</span>              <span class="tok-cmt"># app runs here; code after yield runs on shutdown</span>
+
+app = <span class="tok-fn">FastAPI</span>(title=<span class="tok-str">"Fanpage Chatbot Capstone"</span>, lifespan=lifespan)</pre>
+    <p>Then delete the old <code># TODO (Session 2): build ONE shared agent…</code> comment.</p>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>Start the server and watch the log:</p>
+      <figure class="shot" style="margin-top:8px;">
+        <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">Terminal — uvicorn</span></div>
+        <div class="term">(.venv) $ uvicorn app.main:app --reload
+<span class="c">INFO:     Started server process</span>
+<span class="g">INFO:     Agent built (provider=gemini).</span>
+<span class="c">INFO:     Application startup complete.</span></div>
+      </figure>
+      <p>The line <code>Agent built (provider=gemini).</code> means Step 05 is correct.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 06 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">06</div>
+    <div class="task-title-block">
+      <div class="task-title">Swap echo for the <em>agent</em></div>
+      <div class="task-goal">app/webhook.py — call reply() instead of echoing</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 4 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>Add the import at the top of <code>app/webhook.py</code>:</p>
+<pre data-lang="app/webhook.py"><span class="tok-kw">from</span> app.agent <span class="tok-kw">import</span> reply</pre>
+    <p>Then replace the Session 1 echo block inside the message loop:</p>
+<pre data-lang="app/webhook.py"><span class="tok-cmt"># --- Session 1: echo ---           # DELETE these two lines</span>
+<span class="tok-cmt"># reply_text = message_text</span>
+
+<span class="tok-cmt"># --- Session 2: let the agent generate the reply. ---</span>
+reply_text = <span class="tok-kw">await</span> <span class="tok-fn">reply</span>(sender_id, message_text)
+
+<span class="tok-kw">await</span> <span class="tok-fn">send_message</span>(sender_id, reply_text)</pre>
+
+    <div class="callout warning">
+      <div class="callout-label">Watch out — call send_message exactly ONCE</div>
+      <p>If you accidentally leave <strong>two</strong> <code>await send_message(...)</code> lines, the bot replies <strong>twice</strong> to every message. Keep a single send. (<code>reply()</code> is <code>async</code>, so it needs <code>await</code> — which works because <code>receive_message</code> is already <code>async</code>.)</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>No syntax error: <code>python -c "import app.webhook"</code> imports cleanly.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 07 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">07</div>
+    <div class="task-title-block">
+      <div class="task-title">Test <em>locally</em>, then live</div>
+      <div class="task-goal">scripts/test_locally.py — no Facebook needed</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 8 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>Create the test script</h4>
+    <p>Put this in <code>scripts/test_locally.py</code>. It lets you talk to the agent straight from the terminal — no ngrok, no Messenger.</p>
+<pre data-lang="scripts/test_locally.py"><span class="tok-kw">import</span> asyncio, os, sys
+
+<span class="tok-cmt"># make `import app` work no matter where you launch from</span>
+sys.path.<span class="tok-fn">insert</span>(<span class="tok-num">0</span>, os.path.<span class="tok-fn">dirname</span>(os.path.<span class="tok-fn">dirname</span>(os.path.<span class="tok-fn">abspath</span>(__file__))))
+
+<span class="tok-cmt"># Windows consoles default to cp1252 and choke on non-ASCII — force UTF-8</span>
+<span class="tok-kw">try</span>:
+    sys.stdout.<span class="tok-fn">reconfigure</span>(encoding=<span class="tok-str">"utf-8"</span>)
+<span class="tok-kw">except</span> <span class="tok-fn">Exception</span>:
+    <span class="tok-kw">pass</span>
+
+<span class="tok-kw">from</span> app.agent <span class="tok-kw">import</span> build_agent, reply
+
+USER = <span class="tok-str">"local-test-user"</span>  <span class="tok-cmt"># fixed id so history persists across turns</span>
+
+
+<span class="tok-kw">async def</span> <span class="tok-fn">main</span>():
+    <span class="tok-fn">build_agent</span>()
+    args = sys.argv[<span class="tok-num">1</span>:]
+    <span class="tok-kw">if</span> args:
+        <span class="tok-fn">print</span>(<span class="tok-str">"Bot:"</span>, <span class="tok-kw">await</span> <span class="tok-fn">reply</span>(USER, <span class="tok-str">" "</span>.<span class="tok-fn">join</span>(args)))
+    <span class="tok-kw">else</span>:
+        <span class="tok-fn">print</span>(<span class="tok-str">"Type a message (or 'quit'):"</span>)
+        <span class="tok-kw">while</span> <span class="tok-kw">True</span>:
+            msg = <span class="tok-fn">input</span>(<span class="tok-str">"You: "</span>).<span class="tok-fn">strip</span>()
+            <span class="tok-kw">if</span> msg.<span class="tok-fn">lower</span>() <span class="tok-kw">in</span> {<span class="tok-str">"quit"</span>, <span class="tok-str">"exit"</span>, <span class="tok-str">"q"</span>}:
+                <span class="tok-kw">break</span>
+            <span class="tok-kw">if</span> msg:
+                <span class="tok-fn">print</span>(<span class="tok-str">"Bot:"</span>, <span class="tok-kw">await</span> <span class="tok-fn">reply</span>(USER, msg), <span class="tok-str">"\n"</span>)
+
+
+<span class="tok-kw">if</span> __name__ == <span class="tok-str">"__main__"</span>:
+    asyncio.<span class="tok-fn">run</span>(<span class="tok-fn">main</span>())</pre>
+
+    <h4>Run it</h4>
+<pre data-lang="powershell"><span class="tok-cmt"># one-shot</span>
+python scripts/test_locally.py "what time do you open?"
+
+<span class="tok-cmt"># interactive — best for testing memory across turns</span>
+python scripts/test_locally.py</pre>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">Messenger — live test</span></div>
+      <div class="shot-body">
+        <div class="chat">
+          <div class="bubble user"><span class="who">You</span>Do you wash poodles?</div>
+          <div class="bubble bot"><span class="who">Bot</span>Yes, we do bathing &amp; grooming for poodles! Tell me your pup's size and I'll help you book.</div>
+          <div class="bubble user"><span class="who">You</span>what about cats?</div>
+          <div class="bubble bot"><span class="who">Bot</span>We groom cats too! 🐱 Want me to note your details so the team can confirm a slot?</div>
+        </div>
+      </div>
+      <figcaption><b>Figure 7</b> — The second question ("what about cats?") only makes sense if memory works. The bot answers in context — that's the win.</figcaption>
+    </figure>
+
+    <h4>Then test live on Messenger</h4>
+    <p>Make sure <strong>uvicorn + ngrok</strong> are running (Session 1 setup), then message your fanpage as the admin. The bot should answer intelligently and remember context — no longer just echo.</p>
+
+    <div class="callout warning">
+      <div class="callout-label">UnicodeEncodeError: 'charmap' codec can't encode…</div>
+      <p>That's the Windows console (cp1252), not your code. The <code>sys.stdout.reconfigure("utf-8")</code> line in the script fixes it. On Messenger this never happens — it only affects terminal printing.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>Local test prints a real sentence (not the input echoed). On Messenger, a follow-up question is answered <strong>in context</strong>. The server log shows <code>Message from …</code> then <code>Sent reply to …</code> exactly once.</p>
+    </div>
+  </div>
+</div>
+
+<div class="ornament">· · ·</div>
+
+<!-- ============ TEST + TROUBLESHOOT ============ -->
+<div class="section-heading">
+  <h2><em>Troubleshooting</em></h2>
+  <span class="section-tag">common errors</span>
+</div>
+
+<p style="margin-bottom: 8px; color: var(--ink-soft);">These are the snags students hit most in Session 2:</p>
+
+<table class="dataset-table">
+  <thead>
+    <tr><th>Symptom</th><th>Common cause</th><th>Fix</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ImportError: cannot import name 'AgentExecutor'</td>
+      <td>Using old LangChain 0.x API on LangChain 1.x</td>
+      <td>Use <code>from langchain.agents import create_agent</code> (see Step 04)</td>
+    </tr>
+    <tr>
+      <td>429 RESOURCE_EXHAUSTED (limit: 0)</td>
+      <td><code>gemini-2.0-flash</code> has no free quota on your key</td>
+      <td>Switch the model to <code>gemini-2.5-flash</code></td>
+    </tr>
+    <tr>
+      <td>Bot replies twice to every message</td>
+      <td>Two <code>send_message()</code> calls in webhook.py</td>
+      <td>Keep exactly one <code>await send_message(...)</code></td>
+    </tr>
+    <tr>
+      <td>UnicodeEncodeError 'charmap' in terminal</td>
+      <td>Windows console is cp1252, not UTF-8</td>
+      <td>Add <code>sys.stdout.reconfigure("utf-8")</code> (in the test script)</td>
+    </tr>
+    <tr>
+      <td>google_api_key is empty / auth fails</td>
+      <td><code>.env</code> in wrong folder, or server not restarted</td>
+      <td>Put <code>.env</code> in project root; restart uvicorn after edits</td>
+    </tr>
+    <tr>
+      <td>AttributeError: 'NoneType' has no 'ainvoke'</td>
+      <td><code>build_agent()</code> never ran — <code>_agent</code> is None</td>
+      <td>Wire <code>lifespan</code> in main.py (Step 05)</td>
+    </tr>
+    <tr>
+      <td>Bot confidently makes up hours / prices</td>
+      <td>No FAQ data source yet (expected in Session 2)</td>
+      <td>Harden the prompt now; real fix is the FAQ tool in Session 3</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============ FINISH CHECKLIST ============ -->
+<div class="submission">
+  <div class="corner">Done</div>
+  <h2>Checklist <em>before Session 3</em></h2>
+  <p style="color: var(--ink-soft); margin-bottom: 12px;">Make sure every item passes before adding the FAQ tool + Pinecone:</p>
+  <ul class="checklist">
+    <li><strong>requirements_session2.txt installed</strong> — <code>import langchain, langchain_google_genai</code> works</li>
+    <li><strong>GOOGLE_API_KEY + LLM_PROVIDER=gemini</strong> are set in the project-root <code>.env</code></li>
+    <li><strong>app/prompts.py</strong> defines <code>SYSTEM_PROMPT</code></li>
+    <li><strong>app/memory.py</strong> has <code>get_history()</code> using <code>InMemoryChatMessageHistory</code></li>
+    <li><strong>app/agent.py</strong> uses <code>create_agent</code> with <code>gemini-2.5-flash</code>; <code>reply()</code> returns text</li>
+    <li><strong>app/main.py</strong> builds the agent at startup — log shows <code>Agent built (provider=gemini).</code></li>
+    <li><strong>app/webhook.py</strong> calls <code>reply()</code> and sends the result <strong>once</strong></li>
+    <li><strong>scripts/test_locally.py</strong> returns a real, sensible answer</li>
+    <li><strong>On Messenger</strong>: the bot answers intelligently and remembers context across turns</li>
+  </ul>
+</div>
+
+<footer>
+  <span>Session 2 · Agent Guide</span>
+  <span>STEP IT Academy · AI Module 8</span>
+</footer>
+
+</div>
+
+</body>
+</html>
