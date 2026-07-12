@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 3 · RAG Guide — Pinecone, Embeddings, FAQ Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F1EA;
+  --bg-grid: #E8E3D6;
+  --paper: #FFFEFC;
+  --paper-soft: #FBF9F4;
+  --ink: #161A23;
+  --ink-soft: #4A4F5C;
+  --ink-faint: #8B8E97;
+  --rule: #D9D2BF;
+  --rule-soft: #E8E1CC;
+  --navy: #1E3A5F;
+  --navy-soft: #2C5282;
+  --coral: #DD5A3B;
+  --coral-soft: #E87A5F;
+  --amber: #B8842C;
+  --moss: #4A7C59;
+  --plum: #6B2D5C;
+  --plum-soft: #8B4577;
+  --code-bg: #EFEADD;
+  --shadow: 0 1px 0 rgba(30,58,95,0.05), 0 4px 12px rgba(30,58,95,0.06);
+  --shadow-lift: 0 4px 0 rgba(30,58,95,0.06), 0 10px 28px rgba(30,58,95,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 900px; margin: 0 auto; padding: 56px 32px 100px; }
+
+/* ============ BRIEF ============ */
+.brief { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 48px 52px 44px; position: relative; margin-bottom: 48px; box-shadow: var(--shadow-lift); overflow: hidden; }
+.brief::before { content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: linear-gradient(to bottom, var(--navy), var(--moss)); }
+.brief::after { content: ''; position: absolute; top: -60px; right: -60px; width: 240px; height: 240px; background: radial-gradient(circle, rgba(30,58,95,0.14), transparent 70%); pointer-events: none; }
+.tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; position: relative; }
+.tag { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; font-weight: 600; }
+.tag.course { background: var(--navy); color: var(--paper); }
+.tag.level  { background: var(--moss); color: var(--paper); }
+.tag.deadline { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); }
+h1.project-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 3rem; line-height: 1.05; letter-spacing: -0.028em; color: var(--ink); margin-bottom: 6px; position: relative; }
+h1.project-title em { font-style: italic; color: var(--navy); font-weight: 500; }
+.project-sub { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.2rem; color: var(--ink-soft); font-weight: 400; margin-bottom: 28px; position: relative; }
+.scenario { background: var(--paper-soft); border-left: 3px solid var(--navy); padding: 20px 24px; margin: 0 0 24px; position: relative; font-size: 0.98rem; }
+.scenario-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--navy); font-weight: 700; margin-bottom: 10px; }
+.scenario p { margin-bottom: 10px; color: var(--ink-soft); }
+.scenario p:last-child { margin-bottom: 0; }
+.scenario strong { color: var(--ink); font-weight: 600; }
+
+/* ============ INFO STRIP ============ */
+.info-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); margin-bottom: 48px; overflow: hidden; }
+.info-cell { padding: 18px 22px; border-right: 1px solid var(--rule-soft); }
+.info-cell:last-child { border-right: none; }
+.info-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; font-weight: 600; }
+.info-value { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--ink); line-height: 1.2; }
+.info-value small { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: var(--ink-soft); font-weight: 400; display: block; margin-top: 2px; }
+
+/* ============ SECTION DIVIDER ============ */
+.section-heading { display: flex; align-items: baseline; gap: 14px; margin: 48px 0 24px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
+.section-heading h2 { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); }
+.section-heading h2 em { font-style: italic; color: var(--navy); font-weight: 500; }
+.section-heading .section-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.1em; margin-left: auto; }
+
+/* ============ OBJECTIVES ============ */
+.objectives { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 24px 28px; margin-bottom: 32px; }
+.objectives h3 { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
+.objectives ul { list-style: none; }
+.objectives ul li { padding: 6px 0 6px 28px; position: relative; color: var(--ink-soft); }
+.objectives ul li::before { content: '✓'; position: absolute; left: 0; top: 6px; color: var(--moss); font-weight: 700; }
+
+/* ============ TABLE ============ */
+.dataset-table { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 16px 0 32px; }
+.dataset-table th { text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper); background: var(--ink); padding: 12px 16px; font-weight: 600; }
+.dataset-table td { padding: 12px 16px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; font-size: 0.92rem; color: var(--ink-soft); }
+.dataset-table tr:last-child td { border-bottom: none; }
+.dataset-table td:first-child { font-weight: 600; color: var(--coral); width: 30%; }
+.dataset-table code { font-size: 0.82em; }
+
+/* ============ TASKS / STEPS ============ */
+.task { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; margin-bottom: 22px; position: relative; box-shadow: var(--shadow); transition: box-shadow 0.2s ease; }
+.task:hover { box-shadow: var(--shadow-lift); }
+.task-header { padding: 22px 28px 18px; border-bottom: 1px solid var(--rule-soft); display: grid; grid-template-columns: 56px 1fr auto; gap: 18px; align-items: center; }
+.task-num { width: 48px; height: 48px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 500; border-radius: 4px; font-feature-settings: "tnum"; }
+.task-title-block .task-title { font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); line-height: 1.2; margin-bottom: 4px; }
+.task-title-block .task-title em { font-style: italic; color: var(--navy); font-weight: 500; }
+.task-goal { font-family: 'Fraunces', serif; font-style: italic; font-size: 0.95rem; color: var(--ink-soft); }
+.task-meta { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.task-time { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-faint); letter-spacing: 0.08em; }
+.task-body { padding: 22px 28px 26px; }
+.task-body h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin: 18px 0 10px; font-weight: 600; }
+.task-body h4:first-child { margin-top: 0; }
+.task-body p { color: var(--ink-soft); margin-bottom: 10px; }
+.task-body strong { color: var(--ink); font-weight: 600; }
+.task-body ul, .task-body ol { padding-left: 24px; margin: 8px 0 12px; }
+.task-body ul li, .task-body ol li { margin-bottom: 6px; color: var(--ink-soft); }
+
+/* ============ CALLOUTS ============ */
+.callout { margin: 14px 0; padding: 14px 18px; border-radius: 3px; border: 1px solid; font-size: 0.93rem; }
+.callout-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.callout p { margin-bottom: 6px; color: var(--ink-soft); }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong { color: var(--ink); }
+.callout ul { padding-left: 22px; margin: 4px 0; }
+.callout ul li { color: var(--ink-soft); margin-bottom: 4px; }
+.callout.hint { background: #FFF7E8; border-color: #F0E0B0; }
+.callout.hint .callout-label { color: var(--amber); }
+.callout.hint .callout-label::before { content: '💡'; }
+.callout.expected { background: #ECF3EE; border-color: #C5D9CC; }
+.callout.expected .callout-label { color: var(--moss); }
+.callout.expected .callout-label::before { content: '✓'; }
+.callout.warning { background: #FAEEEA; border-color: #E8C5B5; }
+.callout.warning .callout-label { color: var(--coral); }
+.callout.warning .callout-label::before { content: '⚠'; }
+.callout.think { background: #EDF1F7; border-color: #C2CFE0; }
+.callout.think .callout-label { color: var(--navy); }
+.callout.think .callout-label::before { content: '?'; font-weight: 900; font-family: 'Fraunces', serif; }
+
+/* ============ FLOW GRID ============ */
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0 8px; }
+.flow-step { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 14px 16px; position: relative; }
+.flow-step .fs-num { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--navy); font-weight: 700; letter-spacing: 0.12em; }
+.flow-step .fs-name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.98rem; color: var(--ink); margin: 2px 0 4px; }
+.flow-step .fs-desc { font-size: 0.8rem; color: var(--ink-soft); line-height: 1.4; }
+
+/* ============ CODE ============ */
+pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; padding: 14px 18px; overflow-x: auto; margin: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.83rem; line-height: 1.6; color: var(--ink); position: relative; }
+pre::before { content: attr(data-lang); position: absolute; top: 0; right: 0; font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); background: var(--paper-soft); padding: 2px 9px; border-bottom-left-radius: 3px; font-weight: 700; }
+code { font-family: 'JetBrains Mono', monospace; font-size: 0.86em; background: var(--code-bg); padding: 1px 6px; border-radius: 2px; color: var(--plum); font-weight: 500; }
+pre code { background: transparent; padding: 0; color: var(--ink); font-size: inherit; font-weight: 400; }
+.tok-kw { color: var(--coral); font-weight: 600; }
+.tok-fn { color: var(--navy); }
+.tok-str { color: var(--moss); }
+.tok-num { color: var(--plum); }
+.tok-cmt { color: var(--ink-faint); font-style: italic; }
+.tok-var { color: var(--plum); font-weight: 600; }
+
+/* ============ FIGURE / TERMINAL ============ */
+.shot { margin: 16px 0 4px; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--paper); box-shadow: var(--shadow); }
+.shot-chrome { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #ECE7DA; border-bottom: 1px solid var(--rule); }
+.shot-chrome .dot { width: 10px; height: 10px; border-radius: 50%; background: #CFC8B5; }
+.shot-chrome .dot.r { background: #E08A6F; }
+.shot-chrome .dot.y { background: #E0B86F; }
+.shot-chrome .dot.g { background: #8FB89A; }
+.shot-url { margin-left: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--ink-faint); background: var(--paper); border: 1px solid var(--rule-soft); border-radius: 10px; padding: 3px 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shot-body { padding: 20px; background: #FAF8F2; }
+.shot figcaption { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); padding: 9px 14px; letter-spacing: 0.04em; border-top: 1px dashed var(--rule-soft); background: var(--paper); }
+.shot figcaption b { color: var(--navy); font-weight: 700; }
+.term { background: #1C2230; color: #D7DCE5; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; line-height: 1.75; overflow-x: auto; }
+.term .g { color: #8FCB9B; }
+.term .c { color: #7A8294; }
+.term .a { color: #E3C07A; }
+
+/* ============ CHAT BUBBLES ============ */
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 0.86rem; line-height: 1.5; }
+.bubble.user { align-self: flex-end; background: var(--navy); color: #fff; border-bottom-right-radius: 4px; }
+.bubble.bot { align-self: flex-start; background: var(--paper); border: 1px solid var(--rule); color: var(--ink-soft); border-bottom-left-radius: 4px; }
+.bubble .who { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; display: block; margin-bottom: 3px; }
+
+/* ============ FINISH ============ */
+.submission { background: var(--paper); border: 2px solid var(--ink); border-radius: 4px; padding: 32px 36px; margin-top: 48px; position: relative; }
+.submission .corner { position: absolute; top: -12px; left: 24px; background: var(--ink); color: var(--paper); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 14px; font-weight: 700; }
+.submission h2 { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.015em; }
+.submission h2 em { font-style: italic; color: var(--navy); }
+.checklist { list-style: none; margin: 16px 0; }
+.checklist li { padding: 10px 0 10px 36px; position: relative; border-bottom: 1px dashed var(--rule-soft); color: var(--ink-soft); }
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before { content: ''; position: absolute; left: 0; top: 14px; width: 18px; height: 18px; border: 2px solid var(--ink); border-radius: 3px; background: var(--paper); }
+.checklist li strong { color: var(--ink); }
+
+/* ============ FOOTER ============ */
+footer { margin-top: 60px; padding-top: 30px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.05em; }
+.ornament { text-align: center; margin: 36px 0; color: var(--rule); font-family: 'Fraunces', serif; letter-spacing: 0.6em; font-size: 0.9rem; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 720px) {
+  .container { padding: 32px 18px 60px; }
+  .brief { padding: 32px 24px; }
+  h1.project-title { font-size: 2rem; }
+  .info-strip { grid-template-columns: 1fr 1fr; }
+  .info-cell:nth-child(1), .info-cell:nth-child(2) { border-bottom: 1px solid var(--rule-soft); }
+  .info-cell:nth-child(2) { border-right: none; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  .task-header { grid-template-columns: 44px 1fr; gap: 14px; }
+  .task-meta { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; margin-top: 8px; }
+  .task-num { width: 36px; height: 36px; font-size: 1.1rem; }
+  .task-body, .task-header { padding-left: 20px; padding-right: 20px; }
+  .submission { padding: 24px; }
+}
+@media print {
+  body { background: white; }
+  .container { max-width: 100%; padding: 20px; }
+  .task { page-break-inside: avoid; box-shadow: none; }
+  .brief, .submission, .shot { box-shadow: none; }
+  .brief::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ============ BRIEF ============ -->
+<div class="brief">
+  <div class="tag-row">
+    <span class="tag course">Session 3 · Knowledge</span>
+    <span class="tag level">Step-by-Step Guide</span>
+    <span class="tag deadline">~ 60–75 min</span>
+  </div>
+
+  <h1 class="project-title">Teach Your Bot<br>the <em>Facts</em></h1>
+  <p class="project-sub">From a confident bluffer to an honest expert — store your real FAQ in a vector database and let the bot look it up before answering. This is RAG.</p>
+
+  <div class="scenario">
+    <div class="scenario-label">What you'll achieve</div>
+    <p>After Session 2 your bot could talk, but it <strong>made up</strong> prices and hours. Today you give it a real knowledge base: your FAQ goes into <strong>Pinecone</strong> as searchable vectors, and a <strong>tool</strong> lets the agent retrieve the right facts before it answers — so it stops bluffing and starts quoting your actual data.</p>
+    <p>This is <strong>Retrieval-Augmented Generation (RAG)</strong>: <em>retrieve</em> the facts, then <em>generate</em> a natural reply grounded in them.</p>
+  </div>
+</div>
+
+<!-- ============ PREREQ NOTE ============ -->
+<div class="callout hint" style="margin-bottom: 32px;">
+  <div class="callout-label">Before you open this guide</div>
+  <p>You must have <strong>finished Session 2</strong>: the bot answers with the Gemini agent and remembers context. Your <code>.env</code> already has <code>GOOGLE_API_KEY</code> and <code>LLM_PROVIDER=gemini</code>.</p>
+</div>
+
+<!-- ============ INFO STRIP ============ -->
+<div class="info-strip">
+  <div class="info-cell"><div class="info-label">Time</div><div class="info-value">60–75<small>minutes</small></div></div>
+  <div class="info-cell"><div class="info-label">Steps</div><div class="info-value">8<small>+ troubleshooting</small></div></div>
+  <div class="info-cell"><div class="info-label">You need</div><div class="info-value">Pinecone acct<small>free Starter tier</small></div></div>
+  <div class="info-cell"><div class="info-label">Result</div><div class="info-value">No more bluffing<small>answers from data</small></div></div>
+</div>
+
+<!-- ============ OBJECTIVES ============ -->
+<div class="objectives">
+  <h3>By the end you'll have…</h3>
+  <ul>
+    <li>A <strong>Pinecone index</strong> (768-dim, cosine) holding your FAQ as vectors</li>
+    <li>An <strong>upload script</strong> that embeds <code>faqs.csv</code> and fills the index</li>
+    <li>A <strong>search_faq tool</strong> the agent calls to look things up</li>
+    <li>An agent that answers <strong>from real data</strong>, naturally, in the customer's language</li>
+  </ul>
+</div>
+
+<!-- ============ BIG PICTURE ============ -->
+<div class="section-heading">
+  <h2>Two <em>flows</em>, four stages</h2>
+  <span class="section-tag">big picture</span>
+</div>
+
+<p style="margin-bottom: 12px; color: var(--ink-soft);">RAG has a <strong>prep flow</strong> (run once: load data into Pinecone) and a <strong>live flow</strong> (every message: look up + answer). The steps below build both.</p>
+
+<div class="flow">
+  <div class="flow-step"><div class="fs-num">STAGE A</div><div class="fs-name">Setup</div><div class="fs-desc">Install Pinecone, get an API key.</div></div>
+  <div class="flow-step"><div class="fs-num">STAGE B</div><div class="fs-name">Load data</div><div class="fs-desc">CSV → create index → embed + upload (prep flow).</div></div>
+  <div class="flow-step"><div class="fs-num">STAGE C</div><div class="fs-name">Tool</div><div class="fs-desc">Wrap retrieval as a search_faq tool.</div></div>
+  <div class="flow-step"><div class="fs-num">STAGE D</div><div class="fs-name">Wire + test</div><div class="fs-desc">Attach to agent, tune prompt, test.</div></div>
+</div>
+
+<!-- ============ STEPS HEADER ============ -->
+<div class="section-heading">
+  <h2>The steps — <em>in order</em></h2>
+  <span class="section-tag">8 steps</span>
+</div>
+
+<!-- STEP 00 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">00</div>
+    <div class="task-title-block"><div class="task-title">Install <em>Pinecone</em></div><div class="task-goal">One new package on top of Sessions 1-2</div></div>
+    <div class="task-meta"><div class="task-time">~ 4 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>Embeddings reuse <code>langchain-google-genai</code> (already installed), so the only new package is the Pinecone client. Create <code>requirements_session3.txt</code>:</p>
+<pre data-lang="requirements_session3.txt"><span class="tok-cmt"># Session 3 — RAG with Pinecone (adds on top of Sessions 1-2)</span>
+pinecone</pre>
+<pre data-lang="powershell">pip install -r requirements_session3.txt</pre>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "import pinecone; print(pinecone.__version__)"</code> prints a version.</p></div>
+  </div>
+</div>
+
+<!-- STEP 01 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">01</div>
+    <div class="task-title-block"><div class="task-title">Get a <em>Pinecone key</em></div><div class="task-goal">Free Starter account → API key → .env</div></div>
+    <div class="task-meta"><div class="task-time">~ 6 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Open <code>app.pinecone.io</code> → <strong>Sign up with Google</strong> (this usually skips the phone OTP, which can be slow in the region).</li>
+      <li>Onboarding survey: pick <strong>RAG / Agents</strong>, <strong>Vector embeddings</strong>, <strong>Manual coding</strong>. (This is just analytics — it changes nothing.)</li>
+      <li>Sidebar → <strong>API Keys</strong> → <strong>Create API key</strong> → copy the <code>pcsk_…</code> key.</li>
+    </ol>
+    <p>Add to your project-root <code>.env</code>:</p>
+<pre data-lang=".env"><span class="tok-var">PINECONE_API_KEY</span>=pcsk_...your_key
+<span class="tok-var">PINECONE_INDEX_NAME</span>=fanpage-faqs</pre>
+    <div class="callout warning"><div class="callout-label">Watch out</div><p>Keep the key secret (never commit it). Restart any running server after editing <code>.env</code>.</p></div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "from app.config import settings; print(bool(settings.pinecone_api_key))"</code> prints <code>True</code>.</p></div>
+  </div>
+</div>
+
+<!-- STEP 02 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">02</div>
+    <div class="task-title-block"><div class="task-title">Build the <em>FAQ dataset</em></div><div class="task-goal">data/faqs.csv — your shop's real Q&amp;A</div></div>
+    <div class="task-meta"><div class="task-time">~ 10 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>Create <code>data/faqs.csv</code> with two columns, <code>question</code> and <code>answer</code>. Fill it with your real business info — hours, prices, services, location, payment, policies. 15-25 rows is plenty.</p>
+<pre data-lang="data/faqs.csv">question,answer
+"What are your opening hours?","We're open Mon-Sat 8am-7pm, Sun 9am-5pm."
+"How much does a dog bath cost?","Small dogs $8, medium $12, large $18 (incl. blow-dry &amp; nail trim)."
+"Where are you located?","Street 57, BKK1, Phnom Penh, near Independence Monument."</pre>
+    <div class="callout warning">
+      <div class="callout-label">CSV gotchas</div>
+      <ul>
+        <li>Keep the <code>question,answer</code> header row.</li>
+        <li>If a value contains a comma, wrap it in <strong>double quotes</strong>.</li>
+        <li>Save as <strong>CSV UTF-8</strong> (in Excel: "CSV UTF-8"), or the special characters break.</li>
+        <li><strong>Close the file in Excel</strong> before scripts write to it — Excel locks the file.</li>
+      </ul>
+    </div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "import csv; print(len(list(csv.DictReader(open('data/faqs.csv', encoding='utf-8')))))"</code> prints your row count.</p></div>
+  </div>
+</div>
+
+<!-- STEP 03 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">03</div>
+    <div class="task-title-block"><div class="task-title">Create the <em>index</em></div><div class="task-goal">scripts/create_index.py — an empty vector store</div></div>
+    <div class="task-meta"><div class="task-time">~ 8 min</div></div>
+  </div>
+  <div class="task-body">
+    <div class="callout think">
+      <div class="callout-label">Concept — what is an "index"?</div>
+      <p>A Pinecone <strong>index</strong> is an empty warehouse <em>on Pinecone's cloud</em> that will hold your vectors. Creating it does NOT touch <code>faqs.csv</code> and creates no vectors yet — that's the next step. You just build the empty shelf first.</p>
+    </div>
+    <h4>What to do — write scripts/create_index.py</h4>
+<pre data-lang="scripts/create_index.py"><span class="tok-str">"""Create the Pinecone index once (run once)."""</span>
+<span class="tok-kw">import</span> os, sys
+sys.path.<span class="tok-fn">insert</span>(<span class="tok-num">0</span>, os.path.<span class="tok-fn">dirname</span>(os.path.<span class="tok-fn">dirname</span>(os.path.<span class="tok-fn">abspath</span>(__file__))))
+
+<span class="tok-kw">from</span> pinecone <span class="tok-kw">import</span> Pinecone, ServerlessSpec
+<span class="tok-kw">from</span> app.config <span class="tok-kw">import</span> settings
+
+pc = <span class="tok-fn">Pinecone</span>(api_key=settings.pinecone_api_key)
+name = settings.pinecone_index_name
+
+<span class="tok-kw">if</span> pc.<span class="tok-fn">has_index</span>(name):
+    <span class="tok-fn">print</span>(<span class="tok-str">f"Index '{name}' already exists."</span>)
+<span class="tok-kw">else</span>:
+    pc.<span class="tok-fn">create_index</span>(
+        name=name,
+        dimension=<span class="tok-num">768</span>,          <span class="tok-cmt"># Gemini embedding output -> 768</span>
+        metric=<span class="tok-str">"cosine"</span>,        <span class="tok-cmt"># similarity measure</span>
+        spec=<span class="tok-fn">ServerlessSpec</span>(cloud=<span class="tok-str">"aws"</span>, region=<span class="tok-str">"us-east-1"</span>),  <span class="tok-cmt"># free tier</span>
+    )
+    <span class="tok-fn">print</span>(<span class="tok-str">f"Created index '{name}'."</span>)
+
+<span class="tok-fn">print</span>(pc.<span class="tok-fn">describe_index</span>(name))</pre>
+<pre data-lang="powershell">python scripts/create_index.py</pre>
+    <div class="callout warning"><div class="callout-label">Watch out — free tier region</div><p>The free Starter plan only allows <strong>serverless on aws / us-east-1</strong>. Any other cloud/region errors out.</p></div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p>Output shows <code>dimension: 768</code>, <code>metric: 'cosine'</code>, state <strong>Ready</strong>. The index appears in <strong>app.pinecone.io → Indexes</strong>. Re-running prints "already exists" (idempotent).</p></div>
+  </div>
+</div>
+
+<!-- STEP 04 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">04</div>
+    <div class="task-title-block"><div class="task-title">Embed &amp; <em>upload</em></div><div class="task-goal">scripts/upload_faqs.py — fill the index (run once)</div></div>
+    <div class="task-meta"><div class="task-time">~ 12 min</div></div>
+  </div>
+  <div class="task-body">
+    <div class="callout warning">
+      <div class="callout-label">Critical — the embedding model &amp; dimension</div>
+      <p>Use <code>models/gemini-embedding-001</code> (the older <code>text-embedding-004</code> may return <strong>404 Not Found</strong> on your key). It defaults to <strong>3072</strong> dimensions, so you MUST pass <code>output_dimensionality=768</code> to match the index. Use the <strong>same</strong> setting here AND in the tool (Step 5).</p>
+    </div>
+    <h4>What to do — write scripts/upload_faqs.py</h4>
+<pre data-lang="scripts/upload_faqs.py"><span class="tok-str">"""Embed faqs.csv and upsert into Pinecone (run once)."""</span>
+<span class="tok-kw">import</span> csv, os, sys
+sys.path.<span class="tok-fn">insert</span>(<span class="tok-num">0</span>, os.path.<span class="tok-fn">dirname</span>(os.path.<span class="tok-fn">dirname</span>(os.path.<span class="tok-fn">abspath</span>(__file__))))
+
+<span class="tok-kw">from</span> langchain_google_genai <span class="tok-kw">import</span> GoogleGenerativeAIEmbeddings
+<span class="tok-kw">from</span> pinecone <span class="tok-kw">import</span> Pinecone
+<span class="tok-kw">from</span> app.config <span class="tok-kw">import</span> settings
+
+CSV_PATH = os.path.<span class="tok-fn">join</span>(os.path.<span class="tok-fn">dirname</span>(__file__), <span class="tok-str">".."</span>, <span class="tok-str">"data"</span>, <span class="tok-str">"faqs.csv"</span>)
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">main</span>():
+    <span class="tok-kw">with</span> <span class="tok-fn">open</span>(CSV_PATH, encoding=<span class="tok-str">"utf-8"</span>) <span class="tok-kw">as</span> f:
+        rows = <span class="tok-fn">list</span>(csv.<span class="tok-fn">DictReader</span>(f))
+    <span class="tok-fn">print</span>(<span class="tok-str">f"Loaded {len(rows)} FAQ rows."</span>)
+
+    embeddings = <span class="tok-fn">GoogleGenerativeAIEmbeddings</span>(
+        model=<span class="tok-str">"models/gemini-embedding-001"</span>,
+        google_api_key=settings.google_api_key,
+        output_dimensionality=<span class="tok-num">768</span>,
+    )
+    values = embeddings.<span class="tok-fn">embed_documents</span>([r[<span class="tok-str">"question"</span>] <span class="tok-kw">for</span> r <span class="tok-kw">in</span> rows])
+
+    records = [
+        {<span class="tok-str">"id"</span>: <span class="tok-str">f"faq-{i}"</span>, <span class="tok-str">"values"</span>: vec,
+         <span class="tok-str">"metadata"</span>: {<span class="tok-str">"question"</span>: r[<span class="tok-str">"question"</span>], <span class="tok-str">"answer"</span>: r[<span class="tok-str">"answer"</span>]}}
+        <span class="tok-kw">for</span> i, (r, vec) <span class="tok-kw">in</span> <span class="tok-fn">enumerate</span>(<span class="tok-fn">zip</span>(rows, values))
+    ]
+
+    index = <span class="tok-fn">Pinecone</span>(api_key=settings.pinecone_api_key).<span class="tok-fn">Index</span>(settings.pinecone_index_name)
+    index.<span class="tok-fn">upsert</span>(vectors=records)
+    <span class="tok-fn">print</span>(<span class="tok-str">f"Upserted {len(records)} vectors."</span>)
+    <span class="tok-fn">print</span>(index.<span class="tok-fn">describe_index_stats</span>())
+
+
+<span class="tok-kw">if</span> __name__ == <span class="tok-str">"__main__"</span>:
+    <span class="tok-fn">main</span>()</pre>
+<pre data-lang="powershell">python scripts/upload_faqs.py</pre>
+    <div class="callout hint"><div class="callout-label">Embed question only, or question + answer?</div><p>Embedding just the question is the simple default and works well. If your answers contain searchable keywords the question lacks (e.g. "ABA Pay" only in the answer), embed <code>question + "\n" + answer</code> together for better recall. Metadata stays the same either way.</p></div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p>Prints <code>Upserted N vectors.</code> and <code>total_vector_count: N</code> (was 0 before). If you hit <strong>429</strong>, wait a minute and re-run — upsert is idempotent.</p></div>
+  </div>
+</div>
+
+<!-- STEP 05 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">05</div>
+    <div class="task-title-block"><div class="task-title">Write the <em>FAQ tool</em></div><div class="task-goal">app/tools/faq_search.py — retrieval the agent can call</div></div>
+    <div class="task-meta"><div class="task-time">~ 12 min</div></div>
+  </div>
+  <div class="task-body">
+    <p>First make <code>app/tools</code> a package with an empty <code>app/tools/__init__.py</code>. Then write the tool:</p>
+<pre data-lang="app/tools/faq_search.py"><span class="tok-str">"""FAQ retrieval tool backed by Pinecone."""</span>
+<span class="tok-kw">from</span> langchain_core.tools <span class="tok-kw">import</span> tool
+<span class="tok-kw">from</span> langchain_google_genai <span class="tok-kw">import</span> GoogleGenerativeAIEmbeddings
+<span class="tok-kw">from</span> pinecone <span class="tok-kw">import</span> Pinecone
+<span class="tok-kw">from</span> app.config <span class="tok-kw">import</span> settings
+
+<span class="tok-cmt"># Build clients ONCE at import, reuse on every call.</span>
+_embeddings = <span class="tok-fn">GoogleGenerativeAIEmbeddings</span>(
+    model=<span class="tok-str">"models/gemini-embedding-001"</span>,
+    google_api_key=settings.google_api_key,
+    output_dimensionality=<span class="tok-num">768</span>,        <span class="tok-cmt"># MUST match the index + upload</span>
+)
+_index = <span class="tok-fn">Pinecone</span>(api_key=settings.pinecone_api_key).<span class="tok-fn">Index</span>(settings.pinecone_index_name)
+
+SCORE_THRESHOLD = <span class="tok-num">0.5</span>
+
+
+<span class="tok-fn">@tool</span>
+<span class="tok-kw">def</span> <span class="tok-fn">search_faq</span>(query: <span class="tok-fn">str</span>) -> <span class="tok-fn">str</span>:
+    <span class="tok-str">"""Look up the pet salon's FAQ to answer customer questions about hours,
+    prices, services, location, payment, booking, and policies.
+    Call this whenever the customer asks anything about the business."""</span>
+    vector = _embeddings.<span class="tok-fn">embed_query</span>(query)
+    result = _index.<span class="tok-fn">query</span>(vector=vector, top_k=<span class="tok-num">3</span>, include_metadata=<span class="tok-kw">True</span>)
+    matches = [m <span class="tok-kw">for</span> m <span class="tok-kw">in</span> result[<span class="tok-str">"matches"</span>] <span class="tok-kw">if</span> m[<span class="tok-str">"score"</span>] &gt;= SCORE_THRESHOLD]
+    <span class="tok-kw">if</span> <span class="tok-kw">not</span> matches:
+        <span class="tok-kw">return</span> <span class="tok-str">"No relevant FAQ found. Tell the customer you'll check and follow up."</span>
+    <span class="tok-kw">return</span> <span class="tok-str">"\n\n"</span>.<span class="tok-fn">join</span>(<span class="tok-str">f"Q: {m['metadata']['question']}\nA: {m['metadata']['answer']}"</span> <span class="tok-kw">for</span> m <span class="tok-kw">in</span> matches)</pre>
+    <div class="callout hint"><div class="callout-label">The docstring IS the tool's manual</div><p>The agent reads the <code>@tool</code> docstring to decide <em>when</em> to call it. Write it clearly — a vague docstring means the agent uses the tool at the wrong times.</p></div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "from app.tools.faq_search import search_faq; print(search_faq.invoke('do you wash cats?'))"</code> prints relevant Q&amp;A. (Use <code>.invoke()</code> — <code>@tool</code> wraps the function.)</p></div>
+  </div>
+</div>
+
+<!-- STEP 06 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">06</div>
+    <div class="task-title-block"><div class="task-title">Wire tool + <em>tune prompt</em></div><div class="task-goal">agent.py + prompts.py — and one critical fix</div></div>
+    <div class="task-meta"><div class="task-time">~ 10 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>1 · Attach the tool in app/agent.py</h4>
+<pre data-lang="app/agent.py"><span class="tok-kw">from</span> app.tools.faq_search <span class="tok-kw">import</span> search_faq
+<span class="tok-cmt"># ...</span>
+_agent = <span class="tok-fn">create_agent</span>(llm, tools=[search_faq], system_prompt=SYSTEM_PROMPT)</pre>
+
+    <h4>2 · Critical fix in reply() — use .text, not .content</h4>
+    <div class="callout warning">
+      <div class="callout-label">Once the agent has a tool, .content can be a LIST</div>
+      <p>With tool-calling, Gemini's final message <code>.content</code> may come back as a list of blocks, not a string. Sending that to Facebook fails with <code>(#100) Param message[text] must be a UTF-8 encoded string</code>. Fix: read <code>.text</code> (always a clean string):</p>
+<pre data-lang="app/agent.py"><span class="tok-cmt"># reply_text = result["messages"][-1].content   # breaks with tools</span>
+reply_text = result[<span class="tok-str">"messages"</span>][-<span class="tok-num">1</span>].text   <span class="tok-cmt"># .text concatenates text blocks</span></pre>
+    </div>
+
+    <h4>3 · Tune the prompt for natural, grounded answers (prompts.py)</h4>
+<pre data-lang="app/prompts.py">SYSTEM_PROMPT = <span class="tok-str">"""You are a warm, friendly assistant for Happy Paws Pet Salon on Messenger.
+
+- For ANY question about the shop, look it up in the FAQ first, then answer from it.
+- Rephrase naturally and conversationally, in the SAME language the customer writes in.
+  Don't copy word-for-word.
+- Keep facts exact: prices, hours, numbers must match the source. Never invent them.
+- If you can't find it, say you'll check with the team. NEVER make up facts.
+- Never mention tools, lookups, or databases. Reply like a real staff member.
+- Keep replies short and phone-friendly."""</span></pre>
+    <div class="callout think"><div class="callout-label">This is where "natural" lives</div><p>What you embed controls <em>finding</em> the right info; how natural the reply sounds comes from the LLM + this prompt. "Rephrase naturally, same language, keep facts exact" is the sweet spot between fluent and accurate.</p></div>
+  </div>
+</div>
+
+<!-- STEP 07 -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">07</div>
+    <div class="task-title-block"><div class="task-title">Test it <em>end-to-end</em></div><div class="task-goal">Local CLI, then live on Messenger</div></div>
+    <div class="task-meta"><div class="task-time">~ 8 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>Local first</h4>
+<pre data-lang="powershell">python scripts/test_locally.py</pre>
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">grounded answers, any language</span></div>
+      <div class="shot-body">
+        <div class="chat">
+          <div class="bubble user"><span class="who">You</span>how much for a full groom on a medium dog?</div>
+          <div class="bubble bot"><span class="who">Bot</span>A full groom for a medium dog is $22 — that includes a bath, haircut, nail trim, and ear cleaning.</div>
+          <div class="bubble user"><span class="who">You</span>tiệm mở cửa mấy giờ?</div>
+          <div class="bubble bot"><span class="who">Bot</span>Tiệm mở cửa Thứ Hai–Thứ Bảy 8h–19h, Chủ Nhật 9h–17h nhé!</div>
+          <div class="bubble user"><span class="who">You</span>do you sell cat food?</div>
+          <div class="bubble bot"><span class="who">Bot</span>Let me check with the team and get back to you on that!</div>
+        </div>
+      </div>
+      <figcaption><b>Three checks</b> — exact price, answer in the customer's language, and an honest "I'll check" when it's not in the FAQ (no bluffing).</figcaption>
+    </figure>
+    <h4>Then live on Messenger</h4>
+    <p>Restart uvicorn, keep ngrok running, and message your fanpage. The bot now answers from your data.</p>
+    <div class="callout hint">
+      <div class="callout-label">Debugging "Failed to send message"</div>
+      <p>The default log hides Facebook's reason. In <code>messenger.py</code>, add a branch that logs the body so you can see the real error:</p>
+<pre data-lang="app/messenger.py"><span class="tok-kw">except</span> httpx.HTTPStatusError <span class="tok-kw">as</span> error:
+    logger.<span class="tok-fn">error</span>(<span class="tok-str">"Failed to send to %s: %s | Graph API said: %s"</span>,
+                 recipient_id, error, error.response.text)</pre>
+    </div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p>Log shows <code>Sent reply to …</code>. The bot quotes exact prices/hours, answers in the customer's language, and defers honestly when it doesn't know.</p></div>
+  </div>
+</div>
+
+<div class="ornament">· · ·</div>
+
+<!-- TROUBLESHOOTING -->
+<div class="section-heading">
+  <h2><em>Troubleshooting</em></h2>
+  <span class="section-tag">common errors</span>
+</div>
+
+<table class="dataset-table">
+  <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td>404: text-embedding-004 not found</td><td>That model isn't enabled on your key</td><td>Use <code>models/gemini-embedding-001</code></td></tr>
+    <tr><td>Retrieval returns junk / wrong dim error</td><td>Embedding dim ≠ index dim (3072 vs 768)</td><td>Pass <code>output_dimensionality=768</code> everywhere</td></tr>
+    <tr><td>(#100) message[text] must be UTF-8 string</td><td><code>.content</code> is a list when tools are used</td><td>Use <code>result["messages"][-1].text</code></td></tr>
+    <tr><td>Bot says "I don't know" to everything</td><td>Index is empty — upload never ran</td><td>Run <code>upload_faqs.py</code>; check <code>total_vector_count</code></td></tr>
+    <tr><td>429 RESOURCE_EXHAUSTED while embedding</td><td>Free-tier embedding rate limit</td><td>Wait a minute, re-run (idempotent)</td></tr>
+    <tr><td>EBUSY / can't write faqs.csv</td><td>File is open in Excel (locked)</td><td>Close Excel; edit CSV in VS Code</td></tr>
+    <tr><td>create_index region error</td><td>Free tier only allows aws/us-east-1</td><td>Use that cloud + region</td></tr>
+  </tbody>
+</table>
+
+<!-- FINISH -->
+<div class="submission">
+  <div class="corner">Done</div>
+  <h2>Checklist <em>before Session 4</em></h2>
+  <p style="color: var(--ink-soft); margin-bottom: 12px;">Confirm each item before adding the Sheets tool:</p>
+  <ul class="checklist">
+    <li><strong>Pinecone index</strong> <code>fanpage-faqs</code> exists (768, cosine) and shows your vector count</li>
+    <li><strong>upload_faqs.py</strong> ran — <code>total_vector_count</code> equals your CSV row count</li>
+    <li><strong>search_faq tool</strong> returns relevant Q&amp;A via <code>.invoke()</code></li>
+    <li><strong>agent.py</strong> uses <code>tools=[search_faq]</code> and reads <code>.text</code> in reply()</li>
+    <li><strong>prompts.py</strong> tells the bot to use the FAQ, stay exact, and answer naturally</li>
+    <li><strong>On Messenger</strong>: exact prices/hours, customer's language, honest "I'll check" when unknown</li>
+  </ul>
+</div>
+
+<footer>
+  <span>Session 3 · RAG Guide</span>
+  <span>STEP IT Academy · AI Module 8</span>
+</footer>
+
+</div>
+
+</body>
+</html>
