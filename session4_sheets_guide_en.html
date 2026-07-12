@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 4 · Sheets Guide — Service Account, gspread, Booking Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F1EA; --bg-grid: #E8E3D6; --paper: #FFFEFC; --paper-soft: #FBF9F4;
+  --ink: #161A23; --ink-soft: #4A4F5C; --ink-faint: #8B8E97; --rule: #D9D2BF; --rule-soft: #E8E1CC;
+  --navy: #1E3A5F; --navy-soft: #2C5282; --coral: #DD5A3B; --amber: #B8842C; --moss: #4A7C59;
+  --plum: #6B2D5C; --code-bg: #EFEADD;
+  --shadow: 0 1px 0 rgba(30,58,95,0.05), 0 4px 12px rgba(30,58,95,0.06);
+  --shadow-lift: 0 4px 0 rgba(30,58,95,0.06), 0 10px 28px rgba(30,58,95,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); background-image: linear-gradient(var(--bg-grid) 1px, transparent 1px), linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; color: var(--ink); font-family: 'DM Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+.container { max-width: 900px; margin: 0 auto; padding: 56px 32px 100px; }
+.brief { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 48px 52px 44px; position: relative; margin-bottom: 48px; box-shadow: var(--shadow-lift); overflow: hidden; }
+.brief::before { content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: linear-gradient(to bottom, var(--navy), var(--moss)); }
+.brief::after { content: ''; position: absolute; top: -60px; right: -60px; width: 240px; height: 240px; background: radial-gradient(circle, rgba(30,58,95,0.14), transparent 70%); pointer-events: none; }
+.tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; position: relative; }
+.tag { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; font-weight: 600; }
+.tag.course { background: var(--navy); color: var(--paper); }
+.tag.level { background: var(--moss); color: var(--paper); }
+.tag.deadline { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); }
+h1.project-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 3rem; line-height: 1.05; letter-spacing: -0.028em; color: var(--ink); margin-bottom: 6px; position: relative; }
+h1.project-title em { font-style: italic; color: var(--navy); font-weight: 500; }
+.project-sub { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.2rem; color: var(--ink-soft); font-weight: 400; margin-bottom: 28px; position: relative; }
+.scenario { background: var(--paper-soft); border-left: 3px solid var(--navy); padding: 20px 24px; margin: 0 0 24px; position: relative; font-size: 0.98rem; }
+.scenario-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--navy); font-weight: 700; margin-bottom: 10px; }
+.scenario p { margin-bottom: 10px; color: var(--ink-soft); }
+.scenario p:last-child { margin-bottom: 0; }
+.scenario strong { color: var(--ink); font-weight: 600; }
+.info-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); margin-bottom: 48px; overflow: hidden; }
+.info-cell { padding: 18px 22px; border-right: 1px solid var(--rule-soft); }
+.info-cell:last-child { border-right: none; }
+.info-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; font-weight: 600; }
+.info-value { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--ink); line-height: 1.2; }
+.info-value small { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: var(--ink-soft); font-weight: 400; display: block; margin-top: 2px; }
+.section-heading { display: flex; align-items: baseline; gap: 14px; margin: 48px 0 24px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
+.section-heading h2 { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); }
+.section-heading h2 em { font-style: italic; color: var(--navy); font-weight: 500; }
+.section-heading .section-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.1em; margin-left: auto; }
+.objectives { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 24px 28px; margin-bottom: 32px; }
+.objectives h3 { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
+.objectives ul { list-style: none; }
+.objectives ul li { padding: 6px 0 6px 28px; position: relative; color: var(--ink-soft); }
+.objectives ul li::before { content: '✓'; position: absolute; left: 0; top: 6px; color: var(--moss); font-weight: 700; }
+.dataset-table { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 16px 0 32px; }
+.dataset-table th { text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper); background: var(--ink); padding: 12px 16px; font-weight: 600; }
+.dataset-table td { padding: 12px 16px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; font-size: 0.92rem; color: var(--ink-soft); }
+.dataset-table tr:last-child td { border-bottom: none; }
+.dataset-table td:first-child { font-weight: 600; color: var(--coral); width: 30%; }
+.dataset-table code { font-size: 0.82em; }
+.task { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; margin-bottom: 22px; position: relative; box-shadow: var(--shadow); transition: box-shadow 0.2s ease; }
+.task:hover { box-shadow: var(--shadow-lift); }
+.task-header { padding: 22px 28px 18px; border-bottom: 1px solid var(--rule-soft); display: grid; grid-template-columns: 56px 1fr auto; gap: 18px; align-items: center; }
+.task-num { width: 48px; height: 48px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 500; border-radius: 4px; }
+.task-title-block .task-title { font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); line-height: 1.2; margin-bottom: 4px; }
+.task-title-block .task-title em { font-style: italic; color: var(--navy); font-weight: 500; }
+.task-goal { font-family: 'Fraunces', serif; font-style: italic; font-size: 0.95rem; color: var(--ink-soft); }
+.task-meta { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.task-time { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-faint); letter-spacing: 0.08em; }
+.task-body { padding: 22px 28px 26px; }
+.task-body h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin: 18px 0 10px; font-weight: 600; }
+.task-body h4:first-child { margin-top: 0; }
+.task-body p { color: var(--ink-soft); margin-bottom: 10px; }
+.task-body strong { color: var(--ink); font-weight: 600; }
+.task-body ul, .task-body ol { padding-left: 24px; margin: 8px 0 12px; }
+.task-body ul li, .task-body ol li { margin-bottom: 6px; color: var(--ink-soft); }
+.callout { margin: 14px 0; padding: 14px 18px; border-radius: 3px; border: 1px solid; font-size: 0.93rem; }
+.callout-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.callout p { margin-bottom: 6px; color: var(--ink-soft); }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong { color: var(--ink); }
+.callout ul { padding-left: 22px; margin: 4px 0; }
+.callout ul li { color: var(--ink-soft); margin-bottom: 4px; }
+.callout.hint { background: #FFF7E8; border-color: #F0E0B0; }
+.callout.hint .callout-label { color: var(--amber); }
+.callout.hint .callout-label::before { content: '💡'; }
+.callout.expected { background: #ECF3EE; border-color: #C5D9CC; }
+.callout.expected .callout-label { color: var(--moss); }
+.callout.expected .callout-label::before { content: '✓'; }
+.callout.warning { background: #FAEEEA; border-color: #E8C5B5; }
+.callout.warning .callout-label { color: var(--coral); }
+.callout.warning .callout-label::before { content: '⚠'; }
+.callout.think { background: #EDF1F7; border-color: #C2CFE0; }
+.callout.think .callout-label { color: var(--navy); }
+.callout.think .callout-label::before { content: '?'; font-weight: 900; font-family: 'Fraunces', serif; }
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0 8px; }
+.flow-step { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 14px 16px; }
+.flow-step .fs-num { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--navy); font-weight: 700; letter-spacing: 0.12em; }
+.flow-step .fs-name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.98rem; color: var(--ink); margin: 2px 0 4px; }
+.flow-step .fs-desc { font-size: 0.8rem; color: var(--ink-soft); line-height: 1.4; }
+pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; padding: 14px 18px; overflow-x: auto; margin: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.83rem; line-height: 1.6; color: var(--ink); position: relative; }
+pre::before { content: attr(data-lang); position: absolute; top: 0; right: 0; font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); background: var(--paper-soft); padding: 2px 9px; border-bottom-left-radius: 3px; font-weight: 700; }
+code { font-family: 'JetBrains Mono', monospace; font-size: 0.86em; background: var(--code-bg); padding: 1px 6px; border-radius: 2px; color: var(--plum); font-weight: 500; }
+pre code { background: transparent; padding: 0; color: var(--ink); font-size: inherit; font-weight: 400; }
+.tok-kw { color: var(--coral); font-weight: 600; }
+.tok-fn { color: var(--navy); }
+.tok-str { color: var(--moss); }
+.tok-num { color: var(--plum); }
+.tok-cmt { color: var(--ink-faint); font-style: italic; }
+.tok-var { color: var(--plum); font-weight: 600; }
+.shot { margin: 16px 0 4px; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--paper); box-shadow: var(--shadow); }
+.shot-chrome { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #ECE7DA; border-bottom: 1px solid var(--rule); }
+.shot-chrome .dot { width: 10px; height: 10px; border-radius: 50%; background: #CFC8B5; }
+.shot-chrome .dot.r { background: #E08A6F; } .shot-chrome .dot.y { background: #E0B86F; } .shot-chrome .dot.g { background: #8FB89A; }
+.shot-url { margin-left: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--ink-faint); background: var(--paper); border: 1px solid var(--rule-soft); border-radius: 10px; padding: 3px 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shot-body { padding: 20px; background: #FAF8F2; }
+.shot figcaption { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); padding: 9px 14px; letter-spacing: 0.04em; border-top: 1px dashed var(--rule-soft); background: var(--paper); }
+.shot figcaption b { color: var(--navy); font-weight: 700; }
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 0.86rem; line-height: 1.5; }
+.bubble.user { align-self: flex-end; background: var(--navy); color: #fff; border-bottom-right-radius: 4px; }
+.bubble.bot { align-self: flex-start; background: var(--paper); border: 1px solid var(--rule); color: var(--ink-soft); border-bottom-left-radius: 4px; }
+.bubble .who { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; display: block; margin-bottom: 3px; }
+.sheet-row { display: grid; grid-template-columns: repeat(6, 1fr); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 14px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+.sheet-row div { padding: 8px 10px; border-right: 1px solid var(--rule-soft); }
+.sheet-row div:last-child { border-right: none; }
+.sheet-row.head div { background: var(--ink); color: var(--paper); font-weight: 700; }
+.sheet-row.data div { background: var(--paper-soft); color: var(--ink-soft); }
+.submission { background: var(--paper); border: 2px solid var(--ink); border-radius: 4px; padding: 32px 36px; margin-top: 48px; position: relative; }
+.submission .corner { position: absolute; top: -12px; left: 24px; background: var(--ink); color: var(--paper); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 14px; font-weight: 700; }
+.submission h2 { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.015em; }
+.submission h2 em { font-style: italic; color: var(--navy); }
+.checklist { list-style: none; margin: 16px 0; }
+.checklist li { padding: 10px 0 10px 36px; position: relative; border-bottom: 1px dashed var(--rule-soft); color: var(--ink-soft); }
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before { content: ''; position: absolute; left: 0; top: 14px; width: 18px; height: 18px; border: 2px solid var(--ink); border-radius: 3px; background: var(--paper); }
+.checklist li strong { color: var(--ink); }
+footer { margin-top: 60px; padding-top: 30px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.05em; }
+.ornament { text-align: center; margin: 36px 0; color: var(--rule); font-family: 'Fraunces', serif; letter-spacing: 0.6em; font-size: 0.9rem; }
+@media (max-width: 720px) {
+  .container { padding: 32px 18px 60px; }
+  .brief { padding: 32px 24px; }
+  h1.project-title { font-size: 2rem; }
+  .info-strip { grid-template-columns: 1fr 1fr; }
+  .info-cell:nth-child(1), .info-cell:nth-child(2) { border-bottom: 1px solid var(--rule-soft); }
+  .info-cell:nth-child(2) { border-right: none; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  .task-header { grid-template-columns: 44px 1fr; gap: 14px; }
+  .task-meta { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; margin-top: 8px; }
+  .task-num { width: 36px; height: 36px; font-size: 1.1rem; }
+  .task-body, .task-header { padding-left: 20px; padding-right: 20px; }
+  .submission { padding: 24px; }
+  .sheet-row { font-size: 0.6rem; }
+}
+@media print { body { background: white; } .container { max-width: 100%; padding: 20px; } .task { page-break-inside: avoid; box-shadow: none; } .brief, .submission, .shot { box-shadow: none; } .brief::after { display: none; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="brief">
+  <div class="tag-row">
+    <span class="tag course">Session 4 · Action</span>
+    <span class="tag level">Step-by-Step Guide</span>
+    <span class="tag deadline">~ 60–75 min</span>
+  </div>
+  <h1 class="project-title">Give Your Bot<br><em>Hands</em></h1>
+  <p class="project-sub">From an expert that only talks, to an assistant that does — let the bot collect a customer's booking and write it straight into a Google Sheet.</p>
+  <div class="scenario">
+    <div class="scenario-label">What you'll achieve</div>
+    <p>Your bot can already answer from real data. Now it takes <strong>action</strong>: when a customer wants to book, it gathers their name, phone, service, and preferred time, then saves a row to <strong>Google Sheets</strong> — your live bookings list. This is the final capability: <strong>Act</strong>.</p>
+    <p>The new piece is a <strong>save_booking tool</strong>, authenticated by a Google <strong>service account</strong>, writing into a sheet you own.</p>
+  </div>
+</div>
+
+<div class="callout hint" style="margin-bottom: 32px;">
+  <div class="callout-label">Before you open this guide</div>
+  <p>Finish <strong>Session 3</strong> first (the FAQ tool answers from Pinecone). You'll also need a <strong>Google account</strong> and access to <strong>Google Cloud Console</strong> &amp; <strong>Google Sheets</strong>.</p>
+</div>
+
+<div class="info-strip">
+  <div class="info-cell"><div class="info-label">Time</div><div class="info-value">60–75<small>minutes</small></div></div>
+  <div class="info-cell"><div class="info-label">Steps</div><div class="info-value">6<small>+ troubleshooting</small></div></div>
+  <div class="info-cell"><div class="info-label">You need</div><div class="info-value">Google Cloud<small>service account</small></div></div>
+  <div class="info-cell"><div class="info-label">Result</div><div class="info-value">Saves bookings<small>to a live sheet</small></div></div>
+</div>
+
+<div class="objectives">
+  <h3>By the end you'll have…</h3>
+  <ul>
+    <li>A Google <strong>service account</strong> + JSON key the bot uses to log in</li>
+    <li>A <strong>Google Sheet</strong> shared with that account, ready to receive rows</li>
+    <li>A <strong>save_booking tool</strong> that appends a booking row</li>
+    <li>An agent that <strong>collects details and books</strong> — naturally, without leaking internals</li>
+  </ul>
+</div>
+
+<div class="section-heading"><h2>How the <em>pieces</em> connect</h2><span class="section-tag">big picture</span></div>
+<p style="margin-bottom: 12px; color: var(--ink-soft);">A <strong>service account</strong> is a robot Google identity. Its JSON key lets <code>gspread</code> log in; the sheet must be <strong>shared</strong> with the robot's email, then the tool appends rows.</p>
+<div class="flow">
+  <div class="flow-step"><div class="fs-num">AUTH</div><div class="fs-name">Service account</div><div class="fs-desc">JSON key → gspread logs in</div></div>
+  <div class="flow-step"><div class="fs-num">ACCESS</div><div class="fs-name">Share sheet</div><div class="fs-desc">grant the robot email Editor</div></div>
+  <div class="flow-step"><div class="fs-num">TOOL</div><div class="fs-name">save_booking</div><div class="fs-desc">agent calls it with details</div></div>
+  <div class="flow-step"><div class="fs-num">WRITE</div><div class="fs-name">append_row</div><div class="fs-desc">a new line in your sheet</div></div>
+</div>
+
+<div class="section-heading"><h2>The steps — <em>in order</em></h2><span class="section-tag">6 steps</span></div>
+
+<!-- STEP 00 -->
+<div class="task">
+  <div class="task-header"><div class="task-num">00</div><div class="task-title-block"><div class="task-title">Install <em>gspread</em></div><div class="task-goal">One new package on top of Sessions 1-3</div></div><div class="task-meta"><div class="task-time">~ 3 min</div></div></div>
+  <div class="task-body">
+<pre data-lang="requirements_session4.txt"><span class="tok-cmt"># Session 4 — write bookings into Google Sheets</span>
+gspread</pre>
+<pre data-lang="powershell">pip install -r requirements_session4.txt</pre>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "import gspread; print(gspread.__version__)"</code> prints a version.</p></div>
+  </div>
+</div>
+
+<!-- STEP 01 -->
+<div class="task">
+  <div class="task-header"><div class="task-num">01</div><div class="task-title-block"><div class="task-title">Create a <em>service account</em></div><div class="task-goal">Google Cloud → APIs, service account, JSON key</div></div><div class="task-meta"><div class="task-time">~ 15 min</div></div></div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Open <code>console.cloud.google.com</code> → create or pick a project (e.g. <code>petsalon-bot</code>).</li>
+      <li><strong>APIs &amp; Services → Library</strong> → enable <strong>Google Sheets API</strong> AND <strong>Google Drive API</strong>.</li>
+      <li><strong>IAM &amp; Admin → Service Accounts → Create service account</strong> → name it (e.g. <code>sheets-writer</code>) → <strong>Create and continue</strong> → skip roles → <strong>Done</strong>.</li>
+      <li>Click the account → <strong>Keys → Add key → Create new key → JSON</strong> → a <code>.json</code> file downloads.</li>
+      <li>Make a <code>credentials/</code> folder in the project; save the file as <code>credentials/service-account.json</code>.</li>
+      <li>Copy the account's <strong>email</strong> (looks like <code>sheets-writer@PROJECT.iam.gserviceaccount.com</code>) — you need it next.</li>
+    </ol>
+    <div class="callout warning"><div class="callout-label">Watch out</div><ul><li>Enable <strong>both</strong> APIs — Sheets to read/write, Drive so gspread can open files.</li><li>Skip project-level roles; you'll grant access per-sheet (safer).</li><li>The JSON is a <strong>secret key</strong> — never commit it. Add <code>credentials/</code> to <code>.gitignore</code>.</li></ul></div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "import json; d=json.load(open('credentials/service-account.json')); print(d['client_email'])"</code> prints the service account email.</p></div>
+  </div>
+</div>
+
+<!-- STEP 02 -->
+<div class="task">
+  <div class="task-header"><div class="task-num">02</div><div class="task-title-block"><div class="task-title">Create &amp; <em>share</em> the sheet</div><div class="task-goal">The booking list — shared with the robot</div></div><div class="task-meta"><div class="task-time">~ 8 min</div></div></div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Open <code>sheets.new</code> → name it (e.g. <strong>Happy Paws Bookings</strong>).</li>
+      <li>Add a header row in A1:F1:</li>
+    </ol>
+    <div class="sheet-row head"><div>Timestamp</div><div>Name</div><div>Phone</div><div>Service</div><div>Preferred time</div><div>Notes</div></div>
+    <ol start="3">
+      <li>Click <strong>Share</strong> → paste the <strong>service account email</strong> → role <strong>Editor</strong> → untick "Notify people" → Share.</li>
+      <li>Copy the <strong>Sheet ID</strong> from the URL (between <code>/d/</code> and <code>/edit</code>) and add it to <code>.env</code>:</li>
+    </ol>
+<pre data-lang=".env"><span class="tok-var">GOOGLE_SHEETS_ID</span>=1A2B3C...your_sheet_id</pre>
+    <div class="callout warning"><div class="callout-label">Pitfall #9 — the #1 cause of 403 errors</div><p>If you forget to <strong>share the sheet with the service account email</strong>, every write fails with <code>403 PermissionError</code>. The robot can only touch sheets you've explicitly shared with it.</p></div>
+    <div class="callout expected"><div class="callout-label">Verify</div>
+<pre data-lang="powershell">python -c "import gspread; from app.config import settings; sh=gspread.service_account(filename=settings.google_sheets_credentials_path).open_by_key(settings.google_sheets_id); print('Opened:', sh.title)"</pre>
+      <p>Prints <code>Opened: Happy Paws Bookings</code>. A <code>403</code> means re-share; a "<code>API has not been used</code>" error means enable the APIs (Step 01).</p>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 03 -->
+<div class="task">
+  <div class="task-header"><div class="task-num">03</div><div class="task-title-block"><div class="task-title">Write the <em>booking tool</em></div><div class="task-goal">app/tools/sheets.py — append a row</div></div><div class="task-meta"><div class="task-time">~ 12 min</div></div></div>
+  <div class="task-body">
+<pre data-lang="app/tools/sheets.py"><span class="tok-str">"""Save a customer's booking into Google Sheets."""</span>
+<span class="tok-kw">from</span> datetime <span class="tok-kw">import</span> datetime
+
+<span class="tok-kw">import</span> gspread
+<span class="tok-kw">from</span> langchain_core.tools <span class="tok-kw">import</span> tool
+<span class="tok-kw">from</span> app.config <span class="tok-kw">import</span> settings
+
+<span class="tok-cmt"># Connect ONCE at import; reuse the worksheet on every call.</span>
+_worksheet = (
+    gspread.<span class="tok-fn">service_account</span>(filename=settings.google_sheets_credentials_path)
+    .<span class="tok-fn">open_by_key</span>(settings.google_sheets_id)
+    .sheet1
+)
+
+
+<span class="tok-fn">@tool</span>
+<span class="tok-kw">def</span> <span class="tok-fn">save_booking</span>(name: <span class="tok-fn">str</span>, phone: <span class="tok-fn">str</span>, service: <span class="tok-fn">str</span>,
+                 preferred_time: <span class="tok-fn">str</span>, notes: <span class="tok-fn">str</span> = <span class="tok-str">""</span>) -> <span class="tok-fn">str</span>:
+    <span class="tok-str">"""Save a customer's grooming booking to the salon's records.
+    Call this ONLY after you have the customer's name, phone, the service,
+    and their preferred date/time.
+
+    Args:
+        name: customer's full name
+        phone: customer's phone number
+        service: the grooming service requested
+        preferred_time: preferred date and/or time
+        notes: any extra details (breed, size, special requests)
+    """</span>
+    timestamp = datetime.<span class="tok-fn">now</span>().<span class="tok-fn">strftime</span>(<span class="tok-str">"%Y-%m-%d %H:%M:%S"</span>)
+    _worksheet.<span class="tok-fn">append_row</span>([timestamp, name, phone, service, preferred_time, notes])
+    <span class="tok-kw">return</span> <span class="tok-str">f"Booking saved for {name} ({service}, {preferred_time})."</span></pre>
+    <div class="callout hint"><div class="callout-label">Key points</div><ul><li>Column order in <code>append_row</code> must match your header row exactly.</li><li>The docstring's "Call this ONLY after…" stops the agent saving half-empty bookings.</li><li>The return value is for the <em>agent</em>, not the customer — the prompt keeps "saving" hidden.</li></ul></div>
+    <div class="callout expected"><div class="callout-label">Verify</div><p><code>python -c "from app.tools.sheets import save_booking; print(save_booking.invoke({'name':'Test','phone':'012','service':'bath','preferred_time':'Sat 10am'}))"</code> adds a row to your sheet (delete the test row after).</p></div>
+  </div>
+</div>
+
+<!-- STEP 04 -->
+<div class="task">
+  <div class="task-header"><div class="task-num">04</div><div class="task-title-block"><div class="task-title">Wire tool + <em>tune prompt</em></div><div class="task-goal">agent.py + prompts.py — teach it to book</div></div><div class="task-meta"><div class="task-time">~ 10 min</div></div></div>
+  <div class="task-body">
+    <h4>1 · Add the tool in app/agent.py</h4>
+<pre data-lang="app/agent.py"><span class="tok-kw">from</span> app.tools.sheets <span class="tok-kw">import</span> save_booking
+<span class="tok-cmt"># ...</span>
+_agent = <span class="tok-fn">create_agent</span>(llm, tools=[search_faq, save_booking], system_prompt=SYSTEM_PROMPT)</pre>
+
+    <h4>2 · Add booking guidance to SYSTEM_PROMPT (prompts.py)</h4>
+<pre data-lang="app/prompts.py"><span class="tok-cmt"># add this block to your system prompt:</span>
+Taking a booking:
+- When the customer wants to book or leave their details, collect their name,
+  phone number, the service, and their preferred date/time. Ask for missing
+  details naturally, a couple at a time - don't interrogate.
+- Only record the booking once you have name, phone, service, AND preferred time.
+- After recording it, warmly confirm the team will reach out to finalize.
+  Do NOT promise an exact confirmed slot, and never mention saving anything.</pre>
+    <div class="callout think"><div class="callout-label">Why "only once you have all four"?</div><p>Without this rule the agent may call <code>save_booking</code> with blanks. The prompt makes it gather everything first, then act — and the docstring backs it up.</p></div>
+  </div>
+</div>
+
+<!-- STEP 05 -->
+<div class="task">
+  <div class="task-header"><div class="task-num">05</div><div class="task-title-block"><div class="task-title">Test the <em>booking flow</em></div><div class="task-goal">Multi-turn collect → save → confirm</div></div><div class="task-meta"><div class="task-time">~ 8 min</div></div></div>
+  <div class="task-body">
+<pre data-lang="powershell">python scripts/test_locally.py</pre>
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">a real booking, gathered then saved</span></div>
+      <div class="shot-body"><div class="chat">
+        <div class="bubble user"><span class="who">You</span>I'd like to book a bath for my dog</div>
+        <div class="bubble bot"><span class="who">Bot</span>Happy to help! Could I get your name, phone number, your dog's size, and a preferred day/time?</div>
+        <div class="bubble user"><span class="who">You</span>Dara, 077123456, large dog bath, Saturday 10am</div>
+        <div class="bubble bot"><span class="who">Bot</span>All set, Dara! We've got your large dog bath request for Saturday 10am — our team will reach out shortly to confirm. 🐾</div>
+      </div></div>
+      <figcaption><b>The payoff</b> — the bot gathers what it needs, then a new row lands in your sheet.</figcaption>
+    </figure>
+    <div class="sheet-row head"><div>Timestamp</div><div>Name</div><div>Phone</div><div>Service</div><div>Preferred time</div><div>Notes</div></div>
+    <div class="sheet-row data"><div>2026-… 14:02</div><div>Dara</div><div>077123456</div><div>large dog bath</div><div>Saturday 10am</div><div></div></div>
+    <p>Also confirm the FAQ tool still works ("how much is a cat bath?"). Then restart uvicorn and book via Messenger.</p>
+    <div class="callout expected"><div class="callout-label">Verify</div><p>A booking conversation produces a new row in the sheet, the bot confirms warmly without mentioning sheets, and FAQ answers still work.</p></div>
+  </div>
+</div>
+
+<div class="ornament">· · ·</div>
+
+<div class="section-heading"><h2><em>Troubleshooting</em></h2><span class="section-tag">common errors</span></div>
+<table class="dataset-table">
+  <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td>403 / PermissionError on write</td><td>Sheet not shared with the service account</td><td>Share it with the <code>...iam.gserviceaccount.com</code> email (Editor)</td></tr>
+    <tr><td>APIError: API has not been used / disabled</td><td>Sheets or Drive API not enabled</td><td>Enable both in APIs &amp; Services → Library</td></tr>
+    <tr><td>FileNotFoundError: service-account.json</td><td>JSON missing or wrong path</td><td>Put it at <code>credentials/service-account.json</code></td></tr>
+    <tr><td>SpreadsheetNotFound</td><td>Wrong <code>GOOGLE_SHEETS_ID</code></td><td>Copy the ID between <code>/d/</code> and <code>/edit</code></td></tr>
+    <tr><td>Bot saves with blank fields</td><td>Prompt didn't require all details</td><td>Add "only save once you have name, phone, service, time"</td></tr>
+    <tr><td>Bot tells the customer "I saved it to a sheet"</td><td>Prompt doesn't forbid leaking internals</td><td>Add "never mention saving / spreadsheets"</td></tr>
+  </tbody>
+</table>
+
+<div class="submission">
+  <div class="corner">Capstone complete</div>
+  <h2>Final <em>checklist</em></h2>
+  <p style="color: var(--ink-soft); margin-bottom: 12px;">Your fanpage chatbot is now fully featured:</p>
+  <ul class="checklist">
+    <li><strong>Service account JSON</strong> at <code>credentials/service-account.json</code>, both APIs enabled</li>
+    <li><strong>Sheet shared</strong> with the service account; <code>GOOGLE_SHEETS_ID</code> in <code>.env</code></li>
+    <li><strong>save_booking tool</strong> appends a row via <code>.invoke()</code></li>
+    <li><strong>agent.py</strong> uses <code>tools=[search_faq, save_booking]</code></li>
+    <li><strong>prompts.py</strong> collects all details before saving and hides internals</li>
+    <li><strong>On Messenger</strong>: a booking conversation lands a row; FAQ answers still work</li>
+    <li><strong>Speak → Think → Know → Act</strong> — all four capabilities live 🎉</li>
+  </ul>
+</div>
+
+<footer>
+  <span>Session 4 · Sheets Guide</span>
+  <span>STEP IT Academy · AI Module 8</span>
+</footer>
+
+</div>
+</body>
+</html>
