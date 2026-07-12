@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 1 · Setup Guide — Facebook, Token, ngrok, Webhook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F1EA;
+  --bg-grid: #E8E3D6;
+  --paper: #FFFEFC;
+  --paper-soft: #FBF9F4;
+  --ink: #161A23;
+  --ink-soft: #4A4F5C;
+  --ink-faint: #8B8E97;
+  --rule: #D9D2BF;
+  --rule-soft: #E8E1CC;
+  --navy: #1E3A5F;
+  --navy-soft: #2C5282;
+  --coral: #DD5A3B;
+  --coral-soft: #E87A5F;
+  --amber: #B8842C;
+  --moss: #4A7C59;
+  --plum: #6B2D5C;
+  --plum-soft: #8B4577;
+  --code-bg: #EFEADD;
+  --shadow: 0 1px 0 rgba(30,58,95,0.05), 0 4px 12px rgba(30,58,95,0.06);
+  --shadow-lift: 0 4px 0 rgba(30,58,95,0.06), 0 10px 28px rgba(30,58,95,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 56px 32px 100px;
+}
+
+/* ============ HEADER / BRIEF ============ */
+.brief {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 48px 52px 44px;
+  position: relative;
+  margin-bottom: 48px;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.brief::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--navy), var(--moss));
+}
+.brief::after {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(30,58,95,0.14), transparent 70%);
+  pointer-events: none;
+}
+
+.tag-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  position: relative;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.tag.course { background: var(--navy); color: var(--paper); }
+.tag.level  { background: var(--moss); color: var(--paper); }
+.tag.deadline { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); }
+
+h1.project-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 3rem;
+  line-height: 1.05;
+  letter-spacing: -0.028em;
+  color: var(--ink);
+  margin-bottom: 6px;
+  position: relative;
+}
+h1.project-title em {
+  font-style: italic;
+  color: var(--navy);
+  font-weight: 500;
+}
+.project-sub {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+  font-weight: 400;
+  margin-bottom: 28px;
+  position: relative;
+}
+
+.scenario {
+  background: var(--paper-soft);
+  border-left: 3px solid var(--navy);
+  padding: 20px 24px;
+  margin: 0 0 24px;
+  position: relative;
+  font-size: 0.98rem;
+}
+.scenario-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--navy);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.scenario p { margin-bottom: 10px; color: var(--ink-soft); }
+.scenario p:last-child { margin-bottom: 0; }
+.scenario strong { color: var(--ink); font-weight: 600; }
+
+/* ============ INFO STRIP ============ */
+.info-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+  margin-bottom: 48px;
+  overflow: hidden;
+}
+.info-cell {
+  padding: 18px 22px;
+  border-right: 1px solid var(--rule-soft);
+}
+.info-cell:last-child { border-right: none; }
+.info-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.info-value {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.info-value small {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ============ SECTION DIVIDER ============ */
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 48px 0 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--ink);
+}
+.section-heading h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.section-heading h2 em { font-style: italic; color: var(--navy); font-weight: 500; }
+.section-heading .section-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+  margin-left: auto;
+}
+
+/* ============ OBJECTIVES ============ */
+.objectives {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 24px 28px;
+  margin-bottom: 32px;
+}
+.objectives h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.objectives ul {
+  list-style: none;
+}
+.objectives ul li {
+  padding: 6px 0 6px 28px;
+  position: relative;
+  color: var(--ink-soft);
+}
+.objectives ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  color: var(--moss);
+  font-weight: 700;
+}
+
+/* ============ TABLE ============ */
+.dataset-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 16px 0 32px;
+}
+.dataset-table th {
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--ink);
+  padding: 12px 16px;
+  font-weight: 600;
+}
+.dataset-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+.dataset-table tr:last-child td { border-bottom: none; }
+.dataset-table td:first-child {
+  font-weight: 600;
+  color: var(--coral);
+  width: 32%;
+}
+.dataset-table td:nth-child(2) { width: 30%; color: var(--ink-soft); }
+
+/* ============ TASKS / STEPS ============ */
+.task {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  margin-bottom: 22px;
+  position: relative;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease;
+}
+.task:hover { box-shadow: var(--shadow-lift); }
+
+.task-header {
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--rule-soft);
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 18px;
+  align-items: center;
+}
+.task-num {
+  width: 48px;
+  height: 48px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  border-radius: 4px;
+  font-feature-settings: "tnum";
+}
+.task.done .task-num { background: var(--moss); }
+.task-title-block .task-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.task-title-block .task-title em { font-style: italic; color: var(--navy); font-weight: 500; }
+.task-goal {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+.task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+.task-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+}
+
+.task-body { padding: 22px 28px 26px; }
+
+.task-body h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 18px 0 10px;
+  font-weight: 600;
+}
+.task-body h4:first-child { margin-top: 0; }
+
+.task-body p {
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.task-body strong { color: var(--ink); font-weight: 600; }
+
+.task-body ul, .task-body ol {
+  padding-left: 24px;
+  margin: 8px 0 12px;
+}
+.task-body ul li, .task-body ol li {
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 14px 0;
+  padding: 14px 18px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-size: 0.93rem;
+}
+.callout-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.callout p { margin-bottom: 6px; color: var(--ink-soft); }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong { color: var(--ink); }
+.callout ul { padding-left: 22px; margin: 4px 0; }
+.callout ul li { color: var(--ink-soft); margin-bottom: 4px; }
+
+.callout.hint { background: #FFF7E8; border-color: #F0E0B0; }
+.callout.hint .callout-label { color: var(--amber); }
+.callout.hint .callout-label::before { content: '💡'; }
+
+.callout.expected { background: #ECF3EE; border-color: #C5D9CC; }
+.callout.expected .callout-label { color: var(--moss); }
+.callout.expected .callout-label::before { content: '✓'; }
+
+.callout.warning { background: #FAEEEA; border-color: #E8C5B5; }
+.callout.warning .callout-label { color: var(--coral); }
+.callout.warning .callout-label::before { content: '⚠'; }
+
+.callout.think { background: #EDF1F7; border-color: #C2CFE0; }
+.callout.think .callout-label { color: var(--navy); }
+.callout.think .callout-label::before { content: '?'; font-weight: 900; font-family: 'Fraunces', serif; }
+
+/* ============ FLOW GRID ============ */
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+.flow-step {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 14px 16px;
+  position: relative;
+}
+.flow-step .fs-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--navy);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.flow-step .fs-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--ink);
+  margin: 2px 0 4px;
+}
+.flow-step .fs-desc {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+/* ============ CODE ============ */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: var(--paper-soft);
+  padding: 2px 9px;
+  border-bottom-left-radius: 3px;
+  font-weight: 700;
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86em;
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--plum);
+  font-weight: 500;
+}
+pre code { background: transparent; padding: 0; color: var(--ink); font-size: inherit; font-weight: 400; }
+
+.tok-kw { color: var(--coral); font-weight: 600; }
+.tok-fn { color: var(--navy); }
+.tok-str { color: var(--moss); }
+.tok-num { color: var(--plum); }
+.tok-cmt { color: var(--ink-faint); font-style: italic; }
+.tok-var { color: var(--plum); font-weight: 600; }
+
+/* ============ SCREENSHOT / ILLUSTRATION FIGURES ============ */
+.shot {
+  margin: 16px 0 4px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.shot-chrome {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: #ECE7DA;
+  border-bottom: 1px solid var(--rule);
+}
+.shot-chrome .dot { width: 10px; height: 10px; border-radius: 50%; background: #CFC8B5; }
+.shot-chrome .dot.r { background: #E08A6F; }
+.shot-chrome .dot.y { background: #E0B86F; }
+.shot-chrome .dot.g { background: #8FB89A; }
+.shot-url {
+  margin-left: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  border-radius: 10px;
+  padding: 3px 12px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shot-body { padding: 20px; background: #FAF8F2; }
+.shot figcaption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  color: var(--ink-faint);
+  padding: 9px 14px;
+  letter-spacing: 0.04em;
+  border-top: 1px dashed var(--rule-soft);
+  background: var(--paper);
+}
+.shot figcaption b { color: var(--navy); font-weight: 700; }
+
+/* mockup UI primitives */
+.mk { display: flex; gap: 16px; align-items: stretch; }
+.mk-sidebar { width: 148px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); padding: 6px; flex-shrink: 0; }
+.mk-item { padding: 7px 10px; font-size: 0.78rem; color: var(--ink-soft); border-radius: 3px; margin-bottom: 2px; }
+.mk-item.active { background: var(--navy); color: var(--paper); font-weight: 600; }
+.mk-panel { flex: 1; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); padding: 16px; min-width: 0; }
+.mk-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1rem; color: var(--ink); margin-bottom: 12px; }
+.mk-field { margin-bottom: 12px; }
+.mk-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.mk-input {
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-soft);
+  padding: 8px 11px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+  color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mk-btn { display: inline-block; background: var(--navy); color: var(--paper); border-radius: 5px; padding: 8px 16px; font-size: 0.78rem; font-weight: 600; }
+.mk-btn.secondary { background: var(--paper); color: var(--navy); border: 1px solid var(--navy); }
+.mk-btn.success { background: var(--moss); }
+.mk-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.mk-check { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: 0.82rem; color: var(--ink-soft); }
+.mk-box { width: 16px; height: 16px; border: 2px solid var(--ink-faint); border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+.mk-box.on { background: var(--moss); border-color: var(--moss); color: #fff; }
+.mk-box.no { border-color: var(--coral); }
+.mk-check .off-note { color: var(--coral); font-size: 0.72rem; font-style: italic; }
+.mk-divider { height: 1px; background: var(--rule-soft); margin: 12px 0; }
+.marker {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 21px; height: 21px; border-radius: 50%; background: var(--coral); color: #fff;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+}
+.mk-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--paper-soft); border: 1px solid var(--rule); border-radius: 14px; padding: 4px 12px; font-size: 0.76rem; color: var(--ink-soft); }
+.term { background: #1C2230; color: #D7DCE5; border-radius: 0; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; line-height: 1.75; overflow-x: auto; }
+.term .g { color: #8FCB9B; }
+.term .c { color: #7A8294; }
+.term .a { color: #E3C07A; }
+
+/* ============ FINISH ============ */
+.submission {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  padding: 32px 36px;
+  margin-top: 48px;
+  position: relative;
+}
+.submission .corner {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  font-weight: 700;
+}
+.submission h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: -0.015em;
+}
+.submission h2 em { font-style: italic; color: var(--navy); }
+.checklist { list-style: none; margin: 16px 0; }
+.checklist li {
+  padding: 10px 0 10px 36px;
+  position: relative;
+  border-bottom: 1px dashed var(--rule-soft);
+  color: var(--ink-soft);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--paper);
+}
+.checklist li strong { color: var(--ink); }
+
+/* ============ FOOTER ============ */
+footer {
+  margin-top: 60px;
+  padding-top: 30px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+
+/* ============ ORNAMENT ============ */
+.ornament {
+  text-align: center;
+  margin: 36px 0;
+  color: var(--rule);
+  font-family: 'Fraunces', serif;
+  letter-spacing: 0.6em;
+  font-size: 0.9rem;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 720px) {
+  .container { padding: 32px 18px 60px; }
+  .brief { padding: 32px 24px; }
+  h1.project-title { font-size: 2rem; }
+  .info-strip { grid-template-columns: 1fr 1fr; }
+  .info-cell:nth-child(1), .info-cell:nth-child(2) { border-bottom: 1px solid var(--rule-soft); }
+  .info-cell:nth-child(2) { border-right: none; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  .mk { flex-direction: column; }
+  .mk-sidebar { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; }
+  .task-header { grid-template-columns: 44px 1fr; gap: 14px; }
+  .task-meta { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; margin-top: 8px; }
+  .task-num { width: 36px; height: 36px; font-size: 1.1rem; }
+  .task-body, .task-header { padding-left: 20px; padding-right: 20px; }
+  .submission { padding: 24px; }
+  .dataset-table td:first-child, .dataset-table td:nth-child(2) { width: auto; }
+}
+
+@media print {
+  body { background: white; }
+  .container { max-width: 100%; padding: 20px; }
+  .task { page-break-inside: avoid; box-shadow: none; }
+  .brief, .submission, .shot { box-shadow: none; }
+  .brief::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ============ BRIEF ============ -->
+<div class="brief">
+  <div class="tag-row">
+    <span class="tag course">Session 1 · Setup</span>
+    <span class="tag level">Step-by-Step Guide</span>
+    <span class="tag deadline">~ 30–45 min</span>
+  </div>
+
+  <h1 class="project-title">Connect Your Bot<br>to <em>Facebook</em></h1>
+  <p class="project-sub">From zero to a Facebook-verified webhook — in exactly 8 steps: create the App, get a token, open ngrok, and configure the webhook.</p>
+
+  <div class="scenario">
+    <div class="scenario-label">What you'll achieve</div>
+    <p>By the end, Facebook will be able to <strong>reach the server running on your machine</strong>: every message a customer sends on your fanpage travels through ngrok → into your FastAPI app, and the bot replies back. This is the hardest infrastructure part of Session 1 — go slow, get it solid.</p>
+    <p>This guide covers the <strong>setup outside the code</strong>. The code (<code>config.py</code>, <code>webhook.py</code>, <code>messenger.py</code>) is already in the project — here we only wire up Facebook and the network plumbing.</p>
+  </div>
+</div>
+
+<!-- ============ ILLUSTRATION NOTE ============ -->
+<div class="callout hint" style="margin-bottom: 32px;">
+  <div class="callout-label">About the figures in this guide</div>
+  <p>The figures below are <strong>simplified, schematic illustrations</strong> of each screen — not live screenshots — because Meta's dashboard layout changes often. Use them to know <em>what to look for</em>; the real screen will resemble them but won't match pixel-for-pixel. Feel free to replace any figure with your own screenshot.</p>
+</div>
+
+<!-- ============ INFO STRIP ============ -->
+<div class="info-strip">
+  <div class="info-cell">
+    <div class="info-label">Time</div>
+    <div class="info-value">40–55<small>minutes</small></div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Steps</div>
+    <div class="info-value">8<small>+ troubleshooting</small></div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">You need</div>
+    <div class="info-value">FB + Terminal<small>Python 3.11 / 3.12</small></div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Result</div>
+    <div class="info-value">Webhook ✓<small>verified</small></div>
+  </div>
+</div>
+
+<!-- ============ PREREQUISITES ============ -->
+<div class="objectives">
+  <h3>Before you start</h3>
+  <ul>
+    <li>A personal <strong>Facebook account</strong> (to create the App + Page)</li>
+    <li>The <strong>Session 1 starter folder</strong> from your instructor — it contains an <code>app/</code> folder, <code>requirements.txt</code>, and <code>.env.example</code></li>
+    <li><strong>Python 3.11 or 3.12</strong> installed — <strong>not</strong> 3.13 / 3.14 (see Step 0 for why) — and a terminal (PowerShell on Windows)</li>
+    <li>A <strong>phone</strong> with Messenger to test, and for OTP if needed</li>
+  </ul>
+</div>
+
+<!-- ============ ENV SETUP (STEP 0) ============ -->
+<div class="section-heading">
+  <h2>Step 0 — <em>Python environment</em></h2>
+  <span class="section-tag">do this first</span>
+</div>
+
+<p style="margin-bottom: 16px; color: var(--ink-soft);">Before any Facebook work, get the project installing cleanly. The <strong>Session 1 starter</strong> needs only four small packages, so it installs fast. Still, use <strong>Python 3.11 or 3.12</strong> for the whole course: the heavier libraries added later (e.g. <code>numpy</code> via pinecone) have <strong>no prebuilt wheel</strong> on 3.13 / 3.14, so pip would try to compile them and fail with a compiler error.</p>
+
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">0</div>
+    <div class="task-title-block">
+      <div class="task-title">Virtual environment &amp; <em>pip install</em></div>
+      <div class="task-goal">Use Python 3.11/3.12 in an isolated .venv, then install</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 8 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>1 · Check which Python you have</h4>
+<pre data-lang="powershell">py -0p</pre>
+    <p>Look for a <strong>3.11</strong> or <strong>3.12</strong> line. If you only see 3.13 / 3.14, install 3.12 first, then <strong>reopen the terminal</strong>:</p>
+<pre data-lang="powershell">winget install Python.Python.3.12
+<span class="tok-cmt"># or download a 3.12.x installer from python.org/downloads</span></pre>
+
+    <h4>2 · Create &amp; activate the venv (inside the project folder)</h4>
+<pre data-lang="powershell">py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python --version          <span class="tok-cmt"># must print 3.12.x (or 3.11.x)</span></pre>
+
+    <div class="callout warning">
+      <div class="callout-label">If activation is blocked</div>
+      <p>PowerShell may refuse with "running scripts is disabled". Allow it for this terminal only, then activate again:</p>
+<pre data-lang="powershell">Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</pre>
+      <p>When the venv is active, your prompt starts with <code>(.venv)</code>.</p>
+    </div>
+
+    <h4>3 · Upgrade pip, then install</h4>
+<pre data-lang="powershell">python -m pip install --upgrade pip
+pip install -r requirements.txt</pre>
+
+    <div class="callout warning">
+      <div class="callout-label">Error: "NumPy requires GCC &gt;= 8.4" / building numpy from source</div>
+      <p>You're on <strong>Python 3.13 / 3.14</strong> — there's no prebuilt numpy for it, so pip tries to compile it and fails. Fix: recreate the venv with 3.12.</p>
+<pre data-lang="powershell">deactivate
+Remove-Item -Recurse -Force .venv
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt</pre>
+    </div>
+
+    <div class="callout hint">
+      <div class="callout-label">Stuck on endless "Downloading" of many versions?</div>
+      <p>That's pip backtracking through dependency versions. Upgrading pip (step 3) usually fixes it. If it still hangs for several minutes, press <code>Ctrl+C</code> and run the install again after the upgrade.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>The install ends with <code>Successfully installed ...</code>, and this prints OK:</p>
+<pre data-lang="powershell">python -c "import fastapi, uvicorn, langchain, httpx, pydantic_settings, numpy; print('OK', numpy.__version__)"</pre>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">Every new terminal: activate first</div>
+      <p>Each time you open a fresh terminal to run the bot, activate the venv <strong>before</strong> anything else — otherwise Windows falls back to the wrong Python and the errors return:</p>
+<pre data-lang="powershell">.\.venv\Scripts\Activate.ps1</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BIG PICTURE ============ -->
+<div class="section-heading">
+  <h2>The four <em>stages</em></h2>
+  <span class="section-tag">big picture</span>
+</div>
+
+<p style="margin-bottom: 12px; color: var(--ink-soft);">The 8 steps below group into four stages. Understanding this map first makes each step easier to place:</p>
+
+<div class="flow">
+  <div class="flow-step">
+    <div class="fs-num">STAGE A</div>
+    <div class="fs-name">App + Page</div>
+    <div class="fs-desc">Create the test fanpage and Facebook App; add the Messenger product.</div>
+  </div>
+  <div class="flow-step">
+    <div class="fs-num">STAGE B</div>
+    <div class="fs-name">Token</div>
+    <div class="fs-desc">Get the Page Access Token, extend to 60 days, put it in .env.</div>
+  </div>
+  <div class="flow-step">
+    <div class="fs-num">STAGE C</div>
+    <div class="fs-name">ngrok</div>
+    <div class="fs-desc">Run the server + ngrok to get a public HTTPS URL.</div>
+  </div>
+  <div class="flow-step">
+    <div class="fs-num">STAGE D</div>
+    <div class="fs-name">Webhook</div>
+    <div class="fs-desc">Register the URL in Meta, do the verify handshake, subscribe the page.</div>
+  </div>
+</div>
+
+<!-- ============ STEPS HEADER ============ -->
+<div class="section-heading">
+  <h2>The steps — <em>do them in order</em></h2>
+  <span class="section-tag">8 steps</span>
+</div>
+
+<p style="margin-bottom: 24px; color: var(--ink-soft);">Each step has a <strong>What to do</strong> list, an illustrative <strong>figure</strong>, optional <strong>Hint / Watch out</strong> boxes, and a <strong>Verify</strong> box so you can confirm you're correct before moving on.</p>
+
+<!-- ============ STEP 01 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">01</div>
+    <div class="task-title-block">
+      <div class="task-title">Create a <em>test fanpage</em></div>
+      <div class="task-goal">Your own Facebook page to try the bot on</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 3 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Go to <code>facebook.com/pages/create</code> → choose a page type (e.g. "Local business").</li>
+      <li>Name it, for example <strong>"Pet Salon Test – [Your Name]"</strong>, then create it.</li>
+      <li>Make sure you are an <strong>admin</strong> of this page (the creator is admin by default).</li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">facebook.com/pages/create</span></div>
+      <div class="shot-body">
+        <div class="mk-panel">
+          <div class="mk-title">Create a Page</div>
+          <div class="mk-field"><div class="mk-label">Page name</div><div class="mk-input">Pet Salon Test – Sokha</div></div>
+          <div class="mk-field"><div class="mk-label">Category</div><div class="mk-input">Pet service</div></div>
+          <div class="mk-row"><span class="marker">1</span><span class="mk-btn">Create Page</span></div>
+        </div>
+      </div>
+      <figcaption><b>Figure 1</b> — Fill in a name and category, then click <b>Create Page</b>.</figcaption>
+    </figure>
+
+    <div class="callout warning">
+      <div class="callout-label">Watch out — Development mode</div>
+      <p>A new Facebook App is in <strong>Development</strong> mode: the bot only replies to <strong>admins of that page</strong>. So each student must use their <strong>own test page</strong>. You can't use a client's real fanpage without Meta App Review (1–2 weeks).</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>You can open the new page and see "Admin" listed for your account.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 02 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">02</div>
+    <div class="task-title-block">
+      <div class="task-title">Create the App + add <em>Messenger</em></div>
+      <div class="task-goal">The App is the bridge between your code and Facebook</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 5 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Go to <code>developers.facebook.com</code> → <strong>My Apps</strong> → <strong>Create App</strong>.</li>
+      <li><strong>App details:</strong> give the app a name (e.g. <strong>"MyPetStore"</strong>) and your contact email → Next.</li>
+      <li><strong>Use cases:</strong> filter by <strong>"Business messaging"</strong> and select <strong>"Engage with customers on Messenger from Meta"</strong> → Next.</li>
+      <li>Step through <strong>Business → Requirements → Overview</strong> (you can skip connecting a Business portfolio for now) → <strong>Create app</strong>.</li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">developers.facebook.com/apps/creation/</span></div>
+      <div class="shot-body">
+        <div class="mk">
+          <div class="mk-sidebar">
+            <div class="mk-item">Featured</div>
+            <div class="mk-item">All</div>
+            <div class="mk-item active">Business messaging</div>
+            <div class="mk-item">Others</div>
+          </div>
+          <div class="mk-panel">
+            <div class="mk-title">Add use cases</div>
+            <div class="mk-check"><span class="mk-box on">✓</span> Engage with customers on Messenger from Meta</div>
+            <div class="mk-check"><span class="mk-box"></span> Manage messaging &amp; content on Instagram</div>
+            <div class="mk-check"><span class="mk-box"></span> Connect with customers through WhatsApp</div>
+            <div class="mk-row" style="justify-content: flex-end;"><span class="marker">1</span><span class="mk-btn">Next</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>Figure 2</b> — Filter by <b>Business messaging</b>, tick <b>Engage with customers on Messenger from Meta</b>, then <b>Next</b>.</figcaption>
+    </figure>
+
+    <div class="callout hint">
+      <div class="callout-label">Hint — Meta's UI shifts</div>
+      <p>Meta changes this flow fairly often. If a label isn't where described, search by <strong>keyword</strong>: "Messenger", "Use cases", "Generate access tokens". The logic of the steps doesn't change.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">"Unpublished" is normal</div>
+      <p>Your new app shows <strong>Unpublished</strong> (Development mode) in the sidebar — that is exactly what you want. In Development mode the bot works on your own page for anyone with an app role; you do <strong>not</strong> need to publish it. Going Live needs Meta App Review (out of scope).</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>The app dashboard opens, the sidebar shows <strong>Use cases</strong>, and the status reads <strong>Unpublished</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 03 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">03</div>
+    <div class="task-title-block">
+      <div class="task-title">Get the <em>Page Access Token</em></div>
+      <div class="task-goal">The key your code uses to send messages as the page</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 4 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p><strong>Heads-up:</strong> the Page Access Token is <strong>not</strong> the App secret in <em>App settings → Basic</em> — those are different things. Don't use the App secret here.</p>
+    <ol>
+      <li>In the left sidebar click <strong>Use cases</strong> → on the Messenger use case click <strong>Customize</strong>.</li>
+      <li>In the sub-menu click <strong>Messenger API Settings</strong>.</li>
+      <li>Scroll to <strong>"2. Generate access tokens"</strong> → click <strong>Add Page</strong> / <strong>Connect</strong> → choose your test page → grant permissions.</li>
+      <li>Click <strong>Generate</strong> in the Token column → <strong>copy</strong> the long <code>EAA…</code> string from the popup. This is your <code>FB_PAGE_ACCESS_TOKEN</code>.</li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">developers.facebook.com — Messenger API Settings</span></div>
+      <div class="shot-body">
+        <div class="mk-panel">
+          <div class="mk-title">2. Generate access tokens</div>
+          <div class="mk-row" style="justify-content: space-between; border-bottom:1px solid var(--rule-soft); padding-bottom:12px; margin-top:0;">
+            <span class="mk-chip">Ⓟ &nbsp;PetShop</span>
+            <span class="mk-btn secondary">Add Subscriptions</span>
+            <span style="display:flex;align-items:center;gap:10px;"><span class="marker">1</span><span class="mk-btn">Generate</span></span>
+          </div>
+          <div class="mk-field" style="margin-top:12px; margin-bottom:0;"><div class="mk-label">Token (shown in popup)</div><div class="mk-input">EAAGm0PX4ZC8BA...sLZAxxxxxxxx</div></div>
+        </div>
+      </div>
+      <figcaption><b>Figure 3</b> — Under <b>Generate access tokens</b>, connect your page and click <b>Generate</b>; copy the token from the popup.</figcaption>
+    </figure>
+
+    <div class="callout hint">
+      <div class="callout-label">App secret ≠ Page Access Token</div>
+      <p>In <em>App settings → Basic</em> you'll see App ID and App secret — ignore them for this project. The App secret is only for optional webhook signature verification (out of scope). The key you need is generated under <strong>Messenger API Settings</strong>.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">Watch out — keep the token secret</div>
+      <p>This token lets anyone send messages as your page. <strong>Never</strong> paste it into code, public chat, or git. Keep it only in <code>.env</code> (which <code>.gitignore</code> already excludes). The popup closes once you copy — re-click <strong>Generate</strong> if you lose it.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>You have a long token starting with <code>EAA…</code> copied. In the table the page row shows <strong>"Token generated"</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 04 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">04</div>
+    <div class="task-title-block">
+      <div class="task-title">Extend the token to <em>60 days</em></div>
+      <div class="task-goal">Check the expiry in the debugger — extend only if needed</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 4 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Open the <strong>Access Token Debugger</strong>: <code>developers.facebook.com/tools/debug/accesstoken</code>.</li>
+      <li>Paste the token → click <strong>Debug</strong>. Confirm <strong>Type: Page</strong> and that <strong>Scopes</strong> include <code>pages_messaging</code>.</li>
+      <li>Read the <strong>"Expires"</strong> line:
+        <ul>
+          <li><strong>"Never"</strong> (common for the Messenger-panel token) → nothing to do, use it as-is.</li>
+          <li><strong>"in about an hour"</strong> → click <strong>"Extend Access Token"</strong> at the bottom and copy the new long-lived token.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">developers.facebook.com/tools/debug/accesstoken</span></div>
+      <div class="shot-body">
+        <div class="mk-panel">
+          <div class="mk-title">Access Token Info</div>
+          <div class="mk-field"><div class="mk-label">Type</div><div class="mk-input">Page</div></div>
+          <div class="mk-field"><div class="mk-label">Expires</div><div class="mk-input" style="color:var(--moss);font-weight:700;">Never</div></div>
+          <div class="mk-field"><div class="mk-label">Valid</div><div class="mk-input">True</div></div>
+          <div class="mk-field" style="margin-bottom:0;"><div class="mk-label">Scopes</div><div class="mk-input">pages_messaging, public_profile</div></div>
+        </div>
+      </div>
+      <figcaption><b>Figure 4</b> — A healthy Page token: <b>Type: Page</b>, <b>Expires: Never</b>, scope <b>pages_messaging</b>. If Expires shows ~1 hour, click <b>Extend Access Token</b>.</figcaption>
+    </figure>
+
+    <div class="callout hint">
+      <div class="callout-label">Don't confuse the two "expires"</div>
+      <p><strong>Expires</strong> is the token's validity — you want "Never" or ~60 days. <strong>Data Access Expires</strong> (~3 months) is a separate user-data permission window and does <strong>not</strong> stop your token from working. Ignore it for this project.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">Pitfall #3 — token expiry</div>
+      <p>If you ever get a <strong>1-hour</strong> token and skip extending, the bot "suddenly" stops replying mid-class. So if a working bot goes silent, suspect an expired token first. Extending is <strong>not automatic</strong> (out of scope) — redo this step when it expires.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>The debugger shows <strong>Valid: True</strong> and <strong>Expires: Never</strong> (or ≈ 60 days after extending).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 05 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">05</div>
+    <div class="task-title-block">
+      <div class="task-title">Fill in the <em>.env file</em></div>
+      <div class="task-goal">Set the token + verify token so the server can handshake</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 3 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <p>First create your <code>.env</code> from the template (only once):</p>
+<pre data-lang="powershell">Copy-Item .env.example .env</pre>
+    <p>Then open <code>.env</code> and fill in the two Facebook lines. <code>FB_VERIFY_TOKEN</code> is a string <strong>you make up</strong> (anything) — it must match what you enter in Meta at Step 07.</p>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">.env — fanpage-chatbot</span></div>
+      <div class="shot-body" style="padding:0;">
+<pre data-lang=".env" style="margin:0;border:none;border-radius:0;"><span class="tok-cmt"># Facebook</span>
+<span class="tok-var">FB_VERIFY_TOKEN</span>=pet_salon_verify_2026      <span class="tok-cmt"># make this up, any random string</span>
+<span class="tok-var">FB_PAGE_ACCESS_TOKEN</span>=EAAGm0PX4ZC8BA...      <span class="tok-cmt"># the Page token from Steps 03–04</span></pre>
+      </div>
+      <figcaption><b>Figure 5</b> — The two Facebook values in your <b>.env</b> file.</figcaption>
+    </figure>
+
+    <div class="callout hint">
+      <div class="callout-label">Hint — what is FB_VERIFY_TOKEN?</div>
+      <p>It is <strong>not</strong> your Facebook password. It's just a "handshake password" you invent, so Facebook and your server can prove they're a matching pair. Any value works, as long as both sides are identical.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p><code>.env</code> has real values for both <code>FB_VERIFY_TOKEN</code> and <code>FB_PAGE_ACCESS_TOKEN</code> (no longer blank).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 06 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">06</div>
+    <div class="task-title-block">
+      <div class="task-title">Run the server + <em>ngrok</em></div>
+      <div class="task-goal">Create a public HTTPS URL that points to your machine</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 10 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>Why ngrok?</h4>
+    <p>Your server runs at <code>localhost:8000</code> — only your own machine can reach it. Facebook is out on the Internet and <strong>cannot</strong> call <code>localhost</code>. ngrok opens a <strong>tunnel</strong>: it gives you a public HTTPS address and forwards every request straight to your machine.</p>
+<pre data-lang="how it flows">Facebook  ->  https://abc.ngrok-free.app/webhook  ->  (ngrok tunnel)  ->  http://localhost:8000/webhook  ->  your app</pre>
+    <p>You'll keep <strong>two terminals open side by side</strong> for the whole session.</p>
+
+    <h4>Terminal 1 — run the server</h4>
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">Terminal 1 — uvicorn</span></div>
+      <div class="term">$ cd "...\FacebookChatbot"
+$ .\.venv\Scripts\Activate.ps1
+(.venv) $ uvicorn app.main:app --reload
+<span class="c">INFO:     Uvicorn running on </span><span class="g">http://127.0.0.1:8000</span><span class="c"> (Press CTRL+C to quit)</span>
+<span class="c">INFO:     Application startup complete.</span></div>
+      <figcaption><b>Figure 6a</b> — Activate the venv, then start the server on port <b>8000</b>. Leave it running.</figcaption>
+    </figure>
+    <p>Test it locally first: open <code>http://localhost:8000/</code> → you should see <code>{"status":"ok"}</code>. If you get <code>ModuleNotFoundError</code>, your venv isn't active or the install didn't finish — go back to <strong>Step 0</strong>.</p>
+
+    <h4>Terminal 2 — install ngrok (first time only)</h4>
+    <p>ngrok now <strong>requires a free account</strong>. Sign up at <code>dashboard.ngrok.com</code>, then install:</p>
+<pre data-lang="powershell"><span class="tok-cmt"># install ngrok — pick one</span>
+winget install ngrok.ngrok        <span class="tok-cmt"># or: choco install ngrok</span>
+                                  <span class="tok-cmt"># or download the .exe from ngrok.com/download</span></pre>
+
+    <div class="callout warning">
+      <div class="callout-label">"ngrok is not recognized" right after installing?</div>
+      <p>winget added ngrok to your PATH, but the <strong>already-open terminal hasn't reloaded it</strong>. Either open a <strong>new</strong> PowerShell window (then re-activate the venv), or refresh PATH in the current one:</p>
+<pre data-lang="powershell">$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")</pre>
+      <p>Confirm it works with <code>ngrok version</code>.</p>
+    </div>
+
+    <h4>Terminal 2 — attach your authtoken (one time)</h4>
+    <p>Copy the token from <strong>dashboard.ngrok.com → Getting Started → Your Authtoken</strong> — it's the <strong>long secret string</strong>, <em>not</em> the short <code>ID</code> (like <code>cr_…</code>) shown in the Authtokens list. Then run:</p>
+<pre data-lang="powershell">ngrok config add-authtoken &lt;YOUR_AUTHTOKEN&gt;</pre>
+
+    <h4>Terminal 2 — open the tunnel</h4>
+<pre data-lang="powershell">ngrok http 8000</pre>
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">Terminal 2 — ngrok</span></div>
+      <div class="term">ngrok <span class="c">(Ctrl+C to quit)</span>
+
+Session Status    <span class="g">online</span>
+Account           you@example.com (Plan: Free)
+Region            Asia Pacific (ap)
+Forwarding        <span class="g">https://geriatric-diligent-humbling.ngrok-free.dev</span> -> http://localhost:8000</div>
+      <figcaption><b>Figure 6b</b> — Copy the <b>https://…ngrok-free.dev</b> forwarding URL (your free domain may end in <b>.ngrok-free.dev</b> or <b>.ngrok-free.app</b> — both work).</figcaption>
+    </figure>
+
+    <div class="callout warning">
+      <div class="callout-label">Error: "agent version is too old" (ERR_NGROK_121)?</div>
+      <p>winget often installs an <strong>old ngrok</strong> (e.g. 3.3.1) that your account rejects. Update it, then open the tunnel again:</p>
+<pre data-lang="powershell">ngrok update
+ngrok version          <span class="tok-cmt"># should now be 3.20 or newer</span>
+ngrok http 8000</pre>
+      <p>Your saved authtoken stays — no need to re-add it.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">First browser visit shows a warning page</div>
+      <p>The first time you open a <code>*.ngrok-free.app</code> URL in a browser, ngrok shows a grey "You are about to visit…" page → click <strong>"Visit Site"</strong>. This only affects browsers; Facebook's server-to-server calls are <strong>not</strong> blocked by it.</p>
+    </div>
+
+    <div class="callout hint">
+      <div class="callout-label">Hint — claim a free static URL</div>
+      <p>ngrok gives each account <strong>one free static domain</strong>. Grab it from the ngrok dashboard (Domains) and run:</p>
+<pre data-lang="powershell">ngrok http --url=your-name.ngrok-free.app 8000</pre>
+      <p>Benefit: the URL <strong>doesn't change on restart</strong> → you won't have to re-edit the webhook in Meta every time. Highly recommended.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">Keep both terminals open</div>
+      <p>Close Terminal 1 (uvicorn) and the ngrok URL returns <code>502 Bad Gateway</code>. Close Terminal 2 (ngrok) and Facebook can't reach you. Both must stay running the whole time.</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>ngrok shows <code>Forwarding https://….ngrok-free.app -> http://localhost:8000</code>. Open that URL + <code>/</code> in a browser (click "Visit Site" if prompted) → you see <code>{"status":"ok"}</code>. That means Facebook can now reach your machine.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 07 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">07</div>
+    <div class="task-title-block">
+      <div class="task-title">Register the Webhook + <em>verify handshake</em></div>
+      <div class="task-goal">The moment Facebook verifies your server</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 6 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>Go to <strong>Use cases → Customize → Messenger API Settings → "1. Configure webhooks"</strong>.</li>
+      <li>Fill in the two fields (remember to append <code>/webhook</code> to the URL):</li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">developers.facebook.com — Edit Callback URL</span></div>
+      <div class="shot-body">
+        <div class="mk-panel">
+          <div class="mk-title">Edit Callback URL</div>
+          <div class="mk-field"><div class="mk-label">Callback URL</div><div class="mk-row" style="margin:0;flex-wrap:nowrap;"><span class="marker">1</span><div class="mk-input" style="flex:1;">https://your-name.ngrok-free.dev/webhook</div></div></div>
+          <div class="mk-field"><div class="mk-label">Verify token</div><div class="mk-row" style="margin:0;flex-wrap:nowrap;"><span class="marker">2</span><div class="mk-input" style="flex:1;">pet_salon_verify_2026</div></div></div>
+          <div class="mk-row"><span class="marker">3</span><span class="mk-btn success">Verify and Save</span></div>
+        </div>
+      </div>
+      <figcaption><b>Figure 7</b> — Callback URL (with <b>/webhook</b>) + the matching Verify token, then <b>Verify and Save</b>.</figcaption>
+    </figure>
+
+    <ol start="3">
+      <li>Click <strong>Verify and Save</strong>. Facebook immediately calls <code>GET /webhook</code> on your server.</li>
+    </ol>
+
+    <div class="callout think">
+      <div class="callout-label">What happens under the hood?</div>
+      <p>Facebook sends <code>hub.verify_token</code> and <code>hub.challenge</code>. The code in <code>webhook.py</code> compares the token; if it matches, it returns <code>hub.challenge</code> as <strong>plain text</strong>. Facebook sees the right answer → marks it verified. That's the "handshake".</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-label">If verification fails</div>
+      <ul>
+        <li>The token in Meta <strong>doesn't match</strong> <code>FB_VERIFY_TOKEN</code> in <code>.env</code> (most common).</li>
+        <li>You forgot to append <code>/webhook</code> to the URL.</li>
+        <li>The server or ngrok <strong>isn't running</strong>, or you edited <code>.env</code> but <strong>didn't restart</strong> the server.</li>
+      </ul>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>Meta shows a green "Complete / Verified" check. Your server log shows <code>Webhook verified by Facebook.</code></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STEP 08 ============ -->
+<div class="task">
+  <div class="task-header">
+    <div class="task-num">08</div>
+    <div class="task-title-block">
+      <div class="task-title">Subscribe the page + <em>pick fields</em></div>
+      <div class="task-goal">So Facebook actually pushes messages to you</div>
+    </div>
+    <div class="task-meta"><div class="task-time">~ 4 min</div></div>
+  </div>
+  <div class="task-body">
+    <h4>What to do</h4>
+    <ol>
+      <li>In <strong>Messenger API Settings → "2. Generate access tokens"</strong>, next to your page click <strong>Add Subscriptions</strong>.</li>
+      <li>Check <strong>only</strong> the <code>messages</code> field (you may add <code>messaging_postbacks</code> if you want).</li>
+      <li>Under <strong>"Subscribe to a page"</strong>, choose your test fanpage → <strong>Subscribe</strong>.</li>
+    </ol>
+
+    <figure class="shot">
+      <div class="shot-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="shot-url">developers.facebook.com — Webhook Fields</span></div>
+      <div class="shot-body">
+        <div class="mk-panel">
+          <div class="mk-title">Webhook Fields</div>
+          <div class="mk-check"><span class="mk-box on">✓</span> messages</div>
+          <div class="mk-check"><span class="mk-box no"></span> message_echoes &nbsp;<span class="off-note">← leave OFF (causes loops)</span></div>
+          <div class="mk-check"><span class="mk-box"></span> messaging_postbacks &nbsp;<span style="color:var(--ink-faint);font-size:0.74rem;">(optional)</span></div>
+          <div class="mk-divider"></div>
+          <div class="mk-row" style="justify-content: space-between;">
+            <span class="mk-chip">Page:&nbsp; Pet Salon Test – Sokha</span>
+            <span style="display:flex;align-items:center;gap:10px;"><span class="marker">1</span><span class="mk-btn">Subscribe</span></span>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>Figure 8</b> — Check <b>messages</b> only, leave <b>message_echoes</b> off, then subscribe your page.</figcaption>
+    </figure>
+
+    <div class="callout warning">
+      <div class="callout-label">Pitfall #2 — do NOT check message_echoes</div>
+      <p>If you subscribe to <code>message_echoes</code>, every message <strong>your bot sends</strong> comes back to the webhook → the bot replies to itself → <strong>infinite loop</strong>. Check only <code>messages</code>. (The code also filters <code>is_echo</code> as a safety net.)</p>
+    </div>
+
+    <div class="callout expected">
+      <div class="callout-label">Verify</div>
+      <p>Next to the page name it shows a subscribed status, and the <code>messages</code> field is checked.</p>
+    </div>
+  </div>
+</div>
+
+<div class="ornament">· · ·</div>
+
+<!-- ============ TEST + TROUBLESHOOT ============ -->
+<div class="section-heading">
+  <h2>End-to-end <em>test</em> &amp; troubleshooting</h2>
+  <span class="section-tag">echo test</span>
+</div>
+
+<p style="margin-bottom: 8px; color: var(--ink-soft);">Open Messenger on your phone (signed in as the page <strong>admin</strong>) and send <strong>"hello"</strong> to your test fanpage. The bot must reply <strong>"hello"</strong>. In the server log you'll see the message come in and the reply go out.</p>
+
+<p style="margin-bottom: 8px; color: var(--ink-soft);">If it doesn't work yet, scan this table:</p>
+
+<table class="dataset-table">
+  <thead>
+    <tr><th>Symptom</th><th>Common cause</th><th>Fix</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Verification fails at Step 07</td>
+      <td>Token mismatch, missing <code>/webhook</code>, server not restarted</td>
+      <td>Re-match the token, check the URL, restart <code>uvicorn</code> after editing <code>.env</code></td>
+    </tr>
+    <tr>
+      <td>You message but the bot is silent</td>
+      <td>Page not subscribed, or you're not a page admin</td>
+      <td>Redo Step 08; message as the admin account (Dev mode)</td>
+    </tr>
+    <tr>
+      <td>Bot spams itself nonstop</td>
+      <td>You accidentally subscribed <code>message_echoes</code></td>
+      <td>Uncheck <code>message_echoes</code>, keep only <code>messages</code></td>
+    </tr>
+    <tr>
+      <td>Working bot suddenly goes silent</td>
+      <td>Page Access Token expired (1-hour token)</td>
+      <td>Extend the token (Step 04), update <code>.env</code>, restart</td>
+    </tr>
+    <tr>
+      <td>Facebook calls but log shows a send error</td>
+      <td><code>FB_PAGE_ACCESS_TOKEN</code> wrong/missing in <code>.env</code></td>
+      <td>Paste the correct token, restart the server</td>
+    </tr>
+    <tr>
+      <td>ngrok URL changed, webhook dead</td>
+      <td>ngrok gives a random URL on each restart</td>
+      <td>Use the free static domain (Hint in Step 06)</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============ FINISH CHECKLIST ============ -->
+<div class="submission">
+  <div class="corner">Done</div>
+  <h2>Checklist <em>before moving to the code</em></h2>
+  <p style="color: var(--ink-soft); margin-bottom: 12px;">Before writing the AI logic in Session 2, make sure every item below passes:</p>
+  <ul class="checklist">
+    <li><strong>Your <code>.venv</code> (Python 3.11/3.12) is active</strong> and <code>pip install -r requirements.txt</code> finished with no errors</li>
+    <li><strong>You have your own test fanpage</strong> and you're its admin</li>
+    <li><strong>You created a Facebook App</strong> with the Messenger product</li>
+    <li><strong>A 60-day Page Access Token</strong> is in <code>.env</code></li>
+    <li><strong>FB_VERIFY_TOKEN</strong> in <code>.env</code> matches the one set in Meta</li>
+    <li><strong>uvicorn + ngrok are running</strong>; opening the URL shows <code>{"status":"ok"}</code></li>
+    <li><strong>The webhook is verified</strong> (green check in Meta)</li>
+    <li><strong>The page is subscribed</strong> with the <code>messages</code> field</li>
+    <li><strong>The echo test works</strong>: send "hello" → bot replies "hello" on a real fanpage</li>
+  </ul>
+</div>
+
+<footer>
+  <span>Session 1 · Setup Guide</span>
+  <span>STEP IT Academy · AI Module 8</span>
+</footer>
+
+</div>
+
+</body>
+</html>
