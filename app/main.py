@@ -4,6 +4,9 @@ FastAPI entrypoint. Creates the app and wires the webhook routes.
 Run the dev server with:
     uvicorn app.main:app --reload
 """
+from dotenv import load_dotenv
+load_dotenv()
+
 import logging
 from contextlib import asynccontextmanager
 

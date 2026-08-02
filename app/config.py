@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     # "gemini" (default — no international Visa card needed) or "openai".
     llm_provider: str = "gemini"
     openai_api_key: str = ""
-    google_api_key: str = ""          # used by Gemini
+    google_api_key: str = "" 
+    gemini_api_key: str = "AQ.Ab8RN6LaIz2P9ugSOs-96kFeNtcKi6p5CMgIb-tCPdR2d4yZyQ"        # used by Gemini
 
     # --- Vector DB (Pinecone) ---
     pinecone_api_key: str = ""

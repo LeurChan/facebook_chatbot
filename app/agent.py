@@ -8,7 +8,7 @@ from app.config import settings
 from app.memory import get_history
 from app.prompts import SYSTEM_PROMPT
 from app.tools.faq_search import search_faq
-from app.tools.sheets import save_booking
+from app.tools.sheets import book_installation
 
 logger = logging.getLogger(__name__)
 _agent = None  # singleton, set once in build_agent()
@@ -19,7 +19,7 @@ def build_agent():
 
     if settings.llm_provider == "gemini":
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             google_api_key=settings.google_api_key,
         )
     elif settings.llm_provider == "openai":
@@ -29,7 +29,7 @@ def build_agent():
         raise ValueError(f"Unknown LLM_PROVIDER: {settings.llm_provider}")
 
     # Session 3-4: add tools=[search_faq, save_to_sheet] to the call below
-    _agent = create_agent(llm, tools=[search_faq, save_booking], system_prompt=SYSTEM_PROMPT)
+    _agent = create_agent(llm, tools=[search_faq, book_installation], system_prompt=SYSTEM_PROMPT)
     logger.info("Agent built (provider=%s).", settings.llm_provider)
     return _agent
 
