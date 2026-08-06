@@ -47,27 +47,22 @@ async def receive_message(request: Request) -> Response:
     payload = await request.json()
     logger.info("Incoming webhook payload: %s", payload)
 
-    # Walk the nested Meta payload. The loops are intentionally explicit so the
-    # structure is easy to read — one entry can contain several messaging events.
     for entry in payload.get("entry", []):
         for event in entry.get("messaging", []):
             message = event.get("message", {})
 
-            # Pitfall #2: ignore the bot's OWN messages or we loop forever.
             if message.get("is_echo"):
                 continue
 
             sender_id = event.get("sender", {}).get("id")
             message_text = message.get("text")
             if not sender_id or not message_text:
-                continue  # skip non-text events (stickers, delivery receipts, etc.)
+                continue 
 
             logger.info("Message from %s: %s", sender_id, message_text)
 
-            # --- Session 2: let the agent generate the reply. ---
             reply_text = await reply(sender_id, message_text)
 
             await send_message(sender_id, reply_text)
 
-    # Always return 200 quickly so Facebook does not retry the delivery.
     return Response(content="ok", status_code=200)
